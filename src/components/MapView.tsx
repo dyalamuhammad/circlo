@@ -4,12 +4,14 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { createClient } from "@/lib/supabase/client";
 import { createLocationPusher } from "@/lib/locationPusher";
+import OtherMarkers from "@/components/OtherMarkers";
 
 type Props = { userId: string; name: string; avatarUrl?: string | null };
 
 export default function MapView({ userId, name, avatarUrl }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -22,6 +24,7 @@ export default function MapView({ userId, name, avatarUrl }: Props) {
       center: [106.8456, -6.2088], // fallback: Jakarta
       zoom: 3,
     });
+    setMapInstance(map);
 
     // elemen marker custom (avatar / inisial)
     const el = document.createElement("div");
@@ -68,6 +71,7 @@ export default function MapView({ userId, name, avatarUrl }: Props) {
     );
 
     return () => {
+      setMapInstance(null);
       navigator.geolocation.clearWatch(watchId);
       map.remove();
     };
@@ -76,6 +80,7 @@ export default function MapView({ userId, name, avatarUrl }: Props) {
   return (
     <>
       <div ref={containerRef} className="h-full w-full" />
+      {mapInstance && <OtherMarkers map={mapInstance} userId={userId} />}
       {error && (
         <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white">
           {error}
