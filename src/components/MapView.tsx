@@ -13,6 +13,7 @@ type Props = {
   avatarUrl?: string | null;
   sharing: boolean;
   demo?: boolean;
+  focus?: { id: string; n: number } | null;
 };
 
 export default function MapView({
@@ -21,11 +22,13 @@ export default function MapView({
   avatarUrl,
   sharing,
   demo,
+  focus,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
   const [myPos, setMyPos] = useState<[number, number] | null>(null);
+  const lastPos = useRef<[number, number] | null>(null);
 
   const sharingRef = useRef(sharing);
   useEffect(() => {
@@ -68,6 +71,7 @@ export default function MapView({
           pos.coords.longitude,
           pos.coords.latitude,
         ];
+        lastPos.current = lngLat;
         marker.setLngLat(lngLat).addTo(map);
         if (firstFix) {
           map.flyTo({ center: lngLat, zoom: 16 });
@@ -101,9 +105,22 @@ export default function MapView({
   return (
     <>
       <div ref={containerRef} className="h-full w-full" />
-      {mapInstance && <OtherMarkers map={mapInstance} userId={userId} />}
+      {mapInstance && (
+        <OtherMarkers map={mapInstance} userId={userId} focus={focus ?? null} />
+      )}{" "}
       {mapInstance && demo && myPos && (
         <DemoBots map={mapInstance} center={myPos} />
+      )}
+      {mapInstance && (
+        <button
+          onClick={() =>
+            lastPos.current &&
+            mapInstance.flyTo({ center: lastPos.current, zoom: 16 })
+          }
+          className="bg-brand absolute bottom-4 right-3 z-10 rounded-full px-4 py-2 text-sm font-semibold shadow"
+        >
+          Ke posisiku
+        </button>
       )}
       {error && (
         <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white">

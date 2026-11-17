@@ -16,6 +16,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [showFriends, setShowFriends] = useState(false);
   const [sharing, setSharing] = useState(true);
+  const [focus, setFocus] = useState<{ id: string; n: number } | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -52,6 +53,7 @@ export default function Home() {
   return (
     <main className="relative h-dvh w-full">
       <MapView
+        focus={focus}
         demo={!!user.is_anonymous}
         sharing={sharing}
         userId={user.id}
@@ -79,6 +81,10 @@ export default function Home() {
       </div>
       {showFriends && (
         <FriendsPanel
+          onLocate={(id) => {
+            setFocus({ id, n: Date.now() });
+            setShowFriends(false);
+          }}
           userId={user.id}
           isGuest={!!user.is_anonymous}
           onClose={() => setShowFriends(false)}

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import * as maplibregl from "maplibre-gl";
 import { createClient } from "@/lib/supabase/client";
 
@@ -31,13 +31,16 @@ function ago(ms: number) {
 export default function OtherMarkers({
   map,
   userId,
+  focus,
 }: {
   map: maplibregl.Map;
   userId: string;
+  focus: { id: string; n: number } | null;
 }) {
+  const entriesRef = useRef<Map<string, Entry>>(new Map());
   useEffect(() => {
     const supabase = createClient();
-    const entries = new Map<string, Entry>();
+    const entries = entriesRef.current;
     let alive = true;
 
     const refreshStyle = (e: Entry) => {
@@ -141,6 +144,14 @@ export default function OtherMarkers({
       entries.forEach((e) => e.marker.remove());
     };
   }, [map, userId]);
+
+  useEffect(() => {
+    if (!focus) return;
+    const e = entriesRef.current.get(focus.id);
+    if (!e) return;
+    map.flyTo({ center: e.marker.getLngLat(), zoom: 16 });
+    if (!e.marker.getPopup()?.isOpen()) e.marker.togglePopup();
+  }, [focus, map]);
 
   return null;
 }

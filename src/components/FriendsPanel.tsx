@@ -20,14 +20,25 @@ const MESSAGES: Record<string, string> = {
   guest_not_allowed: "Guest tidak bisa menambah teman.",
 };
 
-type Props = { userId: string; isGuest: boolean; onClose: () => void };
+type Props = {
+  userId: string;
+  isGuest: boolean;
+  onClose: () => void;
+  onLocate: (id: string) => void;
+};
 
-export default function FriendsPanel({ userId, isGuest, onClose }: Props) {
+export default function FriendsPanel({
+  userId,
+  isGuest,
+  onClose,
+  onLocate,
+}: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [code, setCode] = useState("");
   const [input, setInput] = useState("");
   const [items, setItems] = useState<Item[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
+  const [live, setLive] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     const { data: me } = await supabase
@@ -58,6 +69,12 @@ export default function FriendsPanel({ userId, isGuest, onClose }: Props) {
     );
     setItems(
       list.map((r) => ({ ...r, name: names.get(otherId(r)) ?? "User" })),
+    );
+    const { data: locs } = await supabase
+      .from("circle_locations")
+      .select("user_id, sharing");
+    setLive(
+      new Set((locs ?? []).filter((l) => l.sharing).map((l) => l.user_id)),
     );
   }, [supabase, userId]);
 
@@ -198,20 +215,38 @@ export default function FriendsPanel({ userId, isGuest, onClose }: Props) {
             {friends.length === 0 && (
               <p className="text-gray-500">Belum ada teman.</p>
             )}
-            {friends.map((i) => (
-              <div
-                key={i.id}
-                className="flex items-center justify-between py-1"
-              >
-                <span>{i.name}</span>
-                <button
-                  onClick={() => remove(i.id)}
-                  className="rounded border px-2 py-1"
+            {friends.map((i) => {
+              const fid =
+                i.requester_id === userId ? i.addressee_id : i.requester_id;
+              return (
+                <div
+                  key={i.id}
+                  className="flex items-center justify-between py-1"
                 >
-                  Hapus
-                </button>
-              </div>
-            ))}
+                  <span>{i.name}</span>
+                  <span className="flex items-center gap-2">
+                    {live.has(fid) ? (
+                      <button
+                        onClick={() => onLocate(fid)}
+                        className="bg-brand rounded px-2 py-1 font-semibold"
+                      >
+                        Lihat
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400">
+                        Lokasi tidak tersedia
+                      </span>
+                    )}
+                    <button
+                      onClick={() => remove(i.id)}
+                      className="rounded border px-2 py-1"
+                    >
+                      Hapus
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
