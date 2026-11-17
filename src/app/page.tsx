@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { ensureProfile } from "@/lib/ensureProfile";
 import dynamic from "next/dynamic";
+import FriendsPanel from "@/components/FriendsPanel";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
@@ -12,6 +13,7 @@ export default function Home() {
   const router = useRouter();
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
+  const [showFriends, setShowFriends] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -43,10 +45,20 @@ export default function Home() {
       />
       <div className="absolute left-3 top-3 z-10 flex items-center gap-3 rounded-lg bg-white/90 px-3 py-2 text-sm shadow">
         <span>{user.is_anonymous ? "Guest" : user.email}</span>
+        <button onClick={() => setShowFriends(true)} className="underline">
+          Teman
+        </button>
         <button onClick={logout} className="underline">
           Logout
         </button>
       </div>
+      {showFriends && (
+        <FriendsPanel
+          userId={user.id}
+          isGuest={!!user.is_anonymous}
+          onClose={() => setShowFriends(false)}
+        />
+      )}
     </main>
   );
 }
