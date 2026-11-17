@@ -5,18 +5,28 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { createClient } from "@/lib/supabase/client";
 import { createLocationPusher } from "@/lib/locationPusher";
 import OtherMarkers from "@/components/OtherMarkers";
+import DemoBots from "@/components/DemoBots";
 
 type Props = {
   userId: string;
   name: string;
   avatarUrl?: string | null;
   sharing: boolean;
+  demo?: boolean;
 };
 
-export default function MapView({ userId, name, avatarUrl, sharing }: Props) {
+export default function MapView({
+  userId,
+  name,
+  avatarUrl,
+  sharing,
+  demo,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
+  const [myPos, setMyPos] = useState<[number, number] | null>(null);
+
   const sharingRef = useRef(sharing);
   useEffect(() => {
     sharingRef.current = sharing;
@@ -61,6 +71,7 @@ export default function MapView({ userId, name, avatarUrl, sharing }: Props) {
         marker.setLngLat(lngLat).addTo(map);
         if (firstFix) {
           map.flyTo({ center: lngLat, zoom: 16 });
+          setMyPos(lngLat);
           firstFix = false;
         }
         setError(null);
@@ -91,6 +102,9 @@ export default function MapView({ userId, name, avatarUrl, sharing }: Props) {
     <>
       <div ref={containerRef} className="h-full w-full" />
       {mapInstance && <OtherMarkers map={mapInstance} userId={userId} />}
+      {mapInstance && demo && myPos && (
+        <DemoBots map={mapInstance} center={myPos} />
+      )}
       {error && (
         <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white">
           {error}

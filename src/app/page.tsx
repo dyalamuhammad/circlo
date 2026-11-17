@@ -6,6 +6,7 @@ import type { User } from "@supabase/supabase-js";
 import { ensureProfile } from "@/lib/ensureProfile";
 import dynamic from "next/dynamic";
 import FriendsPanel from "@/components/FriendsPanel";
+import IosInstallBanner from "@/components/IosInstallBanner";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
@@ -51,6 +52,7 @@ export default function Home() {
   return (
     <main className="relative h-dvh w-full">
       <MapView
+        demo={!!user.is_anonymous}
         sharing={sharing}
         userId={user.id}
         name={
@@ -79,6 +81,7 @@ export default function Home() {
           onClose={() => setShowFriends(false)}
         />
       )}
+      <IosInstallBanner />
     </main>
   );
 }

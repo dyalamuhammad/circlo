@@ -13,16 +13,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
+  colorScheme: "light",
+};
+
 export const metadata: Metadata = {
   title: "Circlo",
   description: "Bagikan lokasi realtime dengan teman",
   applicationName: "Circlo",
   appleWebApp: { capable: true, title: "Circlo", statusBarStyle: "default" },
-  icons: { apple: "/pwa-icon?size=180" },
-};
-
-export const viewport: Viewport = {
-  themeColor: "#2563eb",
+  icons: { apple: "/apple-touch-icon.png" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
