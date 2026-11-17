@@ -49,7 +49,10 @@ export default function IosInstallBanner() {
         </li>
         <li>Buka Circlo dari ikon di Home Screen</li>
       </ol>
-      <button onClick={close} className="mt-3 w-full rounded-lg border py-2">
+      <button
+        onClick={close}
+        className="mt-3 w-full rounded-lg bg-brand py-2 font-semibold"
+      >
         Mengerti
       </button>
     </div>

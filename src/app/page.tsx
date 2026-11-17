@@ -67,7 +67,10 @@ export default function Home() {
         <button onClick={toggleSharing} className="underline">
           Lokasi: {sharing ? "ON" : "OFF"}
         </button>
-        <button onClick={() => setShowFriends(true)} className="underline">
+        <button
+          onClick={() => setShowFriends(true)}
+          className="bg-brand rounded-full px-3 py-1 font-semibold"
+        >
           Teman
         </button>
         <button onClick={logout} className="underline">

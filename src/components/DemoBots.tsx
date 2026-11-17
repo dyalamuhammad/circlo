@@ -23,7 +23,7 @@ export default function DemoBots({
     const markers = BOTS.map((b) => {
       const el = document.createElement("div");
       el.className =
-        "bg-brand flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-white font-bold shadow-lg";
+        "bg-zinc-900 text-lime-300 flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-white font-bold shadow-lg";
       el.textContent = b.name.charAt(0);
       return new maplibregl.Marker({ element: el }).setPopup(
         new maplibregl.Popup({ offset: 25 }).setText(

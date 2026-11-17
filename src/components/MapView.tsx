@@ -48,7 +48,7 @@ export default function MapView({
     // elemen marker custom (avatar / inisial)
     const el = document.createElement("div");
     el.className =
-      "flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-blue-600 text-white font-bold shadow-lg";
+      "flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-brand font-bold shadow-lg";
     if (avatarUrl) {
       const img = document.createElement("img");
       img.src = avatarUrl;

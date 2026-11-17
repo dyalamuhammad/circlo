@@ -80,7 +80,7 @@ export default function OtherMarkers({
       if (!e) {
         const el = document.createElement("div");
         el.className =
-          "flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-emerald-600 font-bold text-white shadow-lg";
+          "flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-zinc-900 font-bold text-lime-300 shadow-lg";
         el.textContent = "?";
         const marker = new maplibregl.Marker({ element: el }).setPopup(
           new maplibregl.Popup({ offset: 25 }),

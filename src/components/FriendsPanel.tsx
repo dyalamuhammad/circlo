@@ -137,7 +137,7 @@ export default function FriendsPanel({ userId, isGuest, onClose }: Props) {
               />
               <button
                 onClick={addFriend}
-                className="rounded bg-black px-3 py-2 text-white"
+                className="rounded bg-brand px-3 py-2 font-semibold"
               >
                 Tambah
               </button>
@@ -157,7 +157,7 @@ export default function FriendsPanel({ userId, isGuest, onClose }: Props) {
                   <span className="flex gap-2">
                     <button
                       onClick={() => accept(i.id)}
-                      className="rounded bg-emerald-600 px-2 py-1 text-white"
+                      className="rounded bg-brand px-2 py-1 font-semibold"
                     >
                       Terima
                     </button>
