@@ -3,7 +3,30 @@ import { useEffect } from "react";
 import * as maplibregl from "maplibre-gl";
 import { createClient } from "@/lib/supabase/client";
 
-type Loc = { user_id: string; lat: number; lng: number; sharing: boolean };
+type Loc = {
+  user_id: string;
+  lat: number;
+  lng: number;
+  sharing: boolean;
+  updated_at: string;
+};
+type Entry = {
+  marker: maplibregl.Marker;
+  el: HTMLElement;
+  name: string;
+  updatedAt: number;
+};
+
+const STALE_MS = 2 * 60 * 1000;
+
+function ago(ms: number) {
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return "baru saja";
+  if (m < 60) return `${m} menit lalu`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} jam lalu`;
+  return `${Math.floor(h / 24)} hari lalu`;
+}
 
 export default function OtherMarkers({
   map,
@@ -14,71 +37,108 @@ export default function OtherMarkers({
 }) {
   useEffect(() => {
     const supabase = createClient();
-    const markers = new Map<string, maplibregl.Marker>();
+    const entries = new Map<string, Entry>();
+    let alive = true;
 
-    const decorate = async (id: string, el: HTMLElement) => {
+    const refreshStyle = (e: Entry) => {
+      const age = Date.now() - e.updatedAt;
+      e.el.style.opacity = age > STALE_MS ? "0.5" : "1";
+      e.marker.getPopup()?.setText(`${e.name} · ${ago(age)}`);
+    };
+
+    const decorate = async (id: string, e: Entry) => {
       const { data } = await supabase
         .from("circle_profiles")
         .select("display_name, avatar_url")
         .eq("id", id)
         .maybeSingle();
-      if (!data) return;
-      el.title = data.display_name;
+      if (!data || !alive) return;
+      e.name = data.display_name;
       if (data.avatar_url) {
         const img = document.createElement("img");
         img.src = data.avatar_url;
         img.referrerPolicy = "no-referrer";
         img.className = "h-full w-full object-cover";
-        el.textContent = "";
-        el.appendChild(img);
+        e.el.textContent = "";
+        e.el.appendChild(img);
       } else {
-        el.textContent = data.display_name.charAt(0).toUpperCase();
+        e.el.textContent = data.display_name.charAt(0).toUpperCase();
       }
+      refreshStyle(e);
+    };
+
+    const remove = (id: string) => {
+      entries.get(id)?.marker.remove();
+      entries.delete(id);
     };
 
     const upsert = (loc: Loc) => {
-      if (loc.user_id === userId) return;
+      if (!alive || loc.user_id === userId) return;
       if (!loc.sharing) return remove(loc.user_id);
 
-      let marker = markers.get(loc.user_id);
-      if (!marker) {
+      let e = entries.get(loc.user_id);
+      if (!e) {
         const el = document.createElement("div");
         el.className =
           "flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-emerald-600 font-bold text-white shadow-lg";
         el.textContent = "?";
-        marker = new maplibregl.Marker({ element: el });
-        markers.set(loc.user_id, marker);
-        decorate(loc.user_id, el);
+        const marker = new maplibregl.Marker({ element: el }).setPopup(
+          new maplibregl.Popup({ offset: 25 }),
+        );
+        e = { marker, el, name: "Teman", updatedAt: 0 };
+        entries.set(loc.user_id, e);
+        decorate(loc.user_id, e);
       }
-      marker.setLngLat([loc.lng, loc.lat]).addTo(map);
+      e.updatedAt = new Date(loc.updated_at).getTime();
+      e.marker.setLngLat([loc.lng, loc.lat]).addTo(map);
+      refreshStyle(e);
     };
 
-    const remove = (id: string) => {
-      markers.get(id)?.remove();
-      markers.delete(id);
+    const sync = async () => {
+      const { data } = await supabase
+        .from("circle_locations")
+        .select("user_id, lat, lng, sharing, updated_at");
+      const seen = new Set<string>();
+      ((data ?? []) as Loc[]).forEach((l) => {
+        if (l.user_id !== userId && l.sharing) seen.add(l.user_id);
+        upsert(l);
+      });
+      entries.forEach((_, id) => {
+        if (!seen.has(id)) remove(id);
+      });
     };
 
-    supabase
-      .from("circle_locations")
-      .select("user_id, lat, lng, sharing")
-      .then(({ data }) => data?.forEach((l) => upsert(l as Loc)));
+    sync();
 
     const channel = supabase
-      .channel("circle-locations")
+      .channel("circle-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "circle_locations" },
-        (payload) => {
-          if (payload.eventType === "DELETE")
-            remove((payload.old as { user_id: string }).user_id);
-          else upsert(payload.new as Loc);
+        (p) => {
+          if (p.eventType === "DELETE")
+            remove((p.old as { user_id: string }).user_id);
+          else upsert(p.new as Loc);
         },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "circle_friendships" },
+        () => sync(),
       )
       .subscribe();
 
+    // refresh status "terakhir dilihat" + sinkron ulang sebagai cadangan
+    const timer = setInterval(() => {
+      entries.forEach(refreshStyle);
+      sync();
+    }, 30000);
+
     return () => {
+      alive = false;
+      clearInterval(timer);
       supabase.removeChannel(channel);
-      markers.forEach((m) => m.remove());
+      entries.forEach((e) => e.marker.remove());
     };
   }, [map, userId]);
 

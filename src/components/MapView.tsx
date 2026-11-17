@@ -6,12 +6,21 @@ import { createClient } from "@/lib/supabase/client";
 import { createLocationPusher } from "@/lib/locationPusher";
 import OtherMarkers from "@/components/OtherMarkers";
 
-type Props = { userId: string; name: string; avatarUrl?: string | null };
+type Props = {
+  userId: string;
+  name: string;
+  avatarUrl?: string | null;
+  sharing: boolean;
+};
 
-export default function MapView({ userId, name, avatarUrl }: Props) {
+export default function MapView({ userId, name, avatarUrl, sharing }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
+  const sharingRef = useRef(sharing);
+  useEffect(() => {
+    sharingRef.current = sharing;
+  }, [sharing]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -55,11 +64,12 @@ export default function MapView({ userId, name, avatarUrl }: Props) {
           firstFix = false;
         }
         setError(null);
-        pushLocation(
-          pos.coords.latitude,
-          pos.coords.longitude,
-          pos.coords.accuracy,
-        );
+        if (sharingRef.current)
+          pushLocation(
+            pos.coords.latitude,
+            pos.coords.longitude,
+            pos.coords.accuracy,
+          );
       },
       (err) =>
         setError(
