@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { createLocationPusher } from "@/lib/locationPusher";
 import OtherMarkers from "@/components/OtherMarkers";
 import DemoBots from "@/components/DemoBots";
+import { LocateFixed } from "lucide-react";
 
 type Props = {
   userId: string;
@@ -117,9 +118,11 @@ export default function MapView({
             lastPos.current &&
             mapInstance.flyTo({ center: lastPos.current, zoom: 16 })
           }
-          className="bg-brand absolute bottom-4 right-3 z-10 rounded-full px-4 py-2 text-sm font-semibold shadow"
+          aria-label="Ke posisiku"
+          title="Ke posisiku"
+          className="glass-bar absolute bottom-6 right-3 z-10 flex h-12 w-12 items-center justify-center rounded-full text-[#1a2e05] transition active:scale-95"
         >
-          Ke posisiku
+          <LocateFixed size={22} />
         </button>
       )}
       {error && (

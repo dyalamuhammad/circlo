@@ -28,3 +28,88 @@ body {
   background-image: linear-gradient(135deg, var(--brand-from), var(--brand-to));
   color: var(--brand-ink);
 }
+
+.bg-main {
+  background: linear-gradient(135deg, #d9f99d 0%, #a3e635 100%);
+}
+
+.glass {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0.2)
+  );
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 24px 60px -12px rgba(26, 46, 5, 0.28),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.glass-bar {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 10px 30px -10px rgba(26, 46, 5, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.btn-glass {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 6px 16px -6px rgba(26, 46, 5, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-1px);
+}
+.btn-glass:active {
+  transform: scale(0.98);
+}
+
+.btn-solid {
+  background: #1a2e05;
+  color: #d9f99d;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.btn-solid:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -8px rgba(26, 46, 5, 0.6);
+}
+.btn-solid:active {
+  transform: scale(0.98);
+}
+
+button:focus-visible {
+  outline: 3px solid #1a2e05;
+  outline-offset: 3px;
+}
+
+.blob {
+  animation: float 12s ease-in-out infinite;
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(24px, -30px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blob {
+    animation: none;
+  }
+}

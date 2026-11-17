@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Locate } from "lucide-react";
 
 type Row = {
   id: string;
@@ -228,8 +229,9 @@ export default function FriendsPanel({
                     {live.has(fid) ? (
                       <button
                         onClick={() => onLocate(fid)}
-                        className="bg-brand rounded px-2 py-1 font-semibold"
+                        className="bg-brand flex items-center gap-1 rounded px-2 py-1 font-semibold"
                       >
+                        <Locate size={14} />
                         Lihat
                       </button>
                     ) : (
