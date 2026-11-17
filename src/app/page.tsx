@@ -51,6 +51,7 @@ export default function Home() {
   return (
     <main className="relative h-dvh w-full">
       <MapView
+        sharing={sharing}
         userId={user.id}
         name={
           user.is_anonymous
