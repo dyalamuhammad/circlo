@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -101,7 +102,11 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-8 text-center text-xs font-medium text-[#1a2e05]/60">
-          Dengan masuk, kamu menyetujui Syarat &amp; Kebijakan Privasi.
+          Dengan masuk, kamu menyetujui{" "}
+          <Link href="/privacy" className="font-bold underline">
+            Kebijakan Privasi
+          </Link>
+          .
         </p>
       </section>
     </main>
