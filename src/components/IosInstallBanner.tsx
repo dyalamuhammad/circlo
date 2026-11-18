@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const KEY = "circlo-ios-banner-dismissed";
-
 export default function IosInstallBanner() {
   const [show, setShow] = useState(false);
 
@@ -15,20 +13,10 @@ export default function IosInstallBanner() {
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
-    let dismissed = false;
-    try {
-      dismissed = localStorage.getItem(KEY) === "1";
-    } catch {}
-
-    setShow(isIos && !standalone && !dismissed);
+    setShow(isIos && !standalone);
   }, []);
 
-  const close = () => {
-    try {
-      localStorage.setItem(KEY, "1");
-    } catch {}
-    setShow(false);
-  };
+  const close = () => setShow(false);
 
   if (!show) return null;
 
