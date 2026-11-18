@@ -1,36 +1,146 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Circlo
 
-## Getting Started
+Berbagi lokasi realtime dengan teman, terinspirasi dari Find My dan Zenly. Web app berbasis PWA yang bisa langsung dicoba tanpa daftar.
 
-First, run the development server:
+**Demo:** https://circlo-rouge.vercel.app
+**Coba cepat:** klik **Masuk sebagai Tamu**, izinkan lokasi, lalu lihat teman simulasi bergerak di peta.
+
+## Screenshots
+
+|                Login                 |              Panel Teman               |
+| :----------------------------------: | :------------------------------------: |
+| ![Login](docs/screenshots/login.png) | ![Teman](docs/screenshots/friends.png) |
+
+|          Mode Demo (Tamu)          |              Banner iPhone              |
+| :--------------------------------: | :-------------------------------------: |
+| ![Demo](docs/screenshots/demo.png) | ![iOS](docs/screenshots/ios-banner.png) |
+
+## Fitur
+
+- Login dengan Google, atau **mode Tamu** (anonymous) untuk mencoba tanpa daftar
+- Peta interaktif dengan marker avatar, lokasi sendiri, dan tombol relocate
+- Pertemanan lewat **kode invite**: kirim permintaan, terima atau tolak, hapus teman
+- Lokasi teman bergerak **realtime**, dengan status "terakhir dilihat" (marker memudar setelah 2 menit tanpa update)
+- Toggle **bagikan lokasi ON/OFF**
+- Klik **Lihat** pada teman untuk terbang ke lokasinya
+- **PWA**: bisa dipasang ke Home Screen, dengan banner petunjuk khusus Safari iPhone
+- **Mode demo** untuk tamu: tiga teman simulasi bergerak di sekitar posisimu
+- Tampilan glass dengan tema lime
+
+## Tech stack
+
+| Bagian   | Teknologi                                                            |
+| -------- | -------------------------------------------------------------------- |
+| Frontend | Next.js (App Router), React, TypeScript, Tailwind CSS                |
+| Peta     | MapLibre GL JS + tile MapTiler                                       |
+| Backend  | Supabase: Auth, PostgreSQL, Realtime (WebSocket), Row Level Security |
+| PWA      | Web App Manifest + service worker minimal                            |
+| Deploy   | Vercel                                                               |
+| Ikon     | lucide-react                                                         |
+
+## Arsitektur
+
+```mermaid
+flowchart LR
+  A[Browser / PWA] -- watchPosition --> B[Throttle & upsert]
+  B --> C[(Supabase Postgres<br/>circle_locations)]
+  C -- Realtime WebSocket --> D[Browser teman]
+  D --> E[MapLibre marker bergerak]
+  A -- OAuth --> F[Google via Supabase Auth]
+```
+
+Alur singkat:
+
+1. Browser membaca posisi lewat Geolocation API (`watchPosition`).
+2. Posisi dikirim dengan **throttle**: minimal tiap 5 detik jika bergeser lebih dari 10 m, atau heartbeat tiap 30 detik.
+3. Hanya **posisi terbaru** per user yang disimpan (upsert), bukan riwayat.
+4. Teman menerima perubahan lewat Supabase Realtime dan marker bergerak otomatis.
+
+### Keputusan teknis
+
+- **Supabase Realtime sebagai WebSocket**, jadi tidak perlu server sendiri untuk di-host.
+- **MapLibre + MapTiler** dipilih agar gratis tanpa kartu kredit, tampilan vector modern, dan tanpa risiko tagihan.
+- **Keamanan di level database (RLS)**, bukan hanya di UI. Lokasi hanya bisa dibaca oleh pemiliknya dan teman berstatus _accepted_.
+- **Tambah teman hanya lewat fungsi SQL** `circle_add_friend_by_code`, yang menolak akun tamu. Tabel pertemanan tidak punya izin insert langsung.
+- **Mode demo berjalan di browser**, tanpa menulis data palsu ke database.
+- **Prefix `circle_`** pada semua tabel, fungsi, dan policy karena project Supabase dipakai bersama aplikasi lain.
+
+### Skema database
+
+| Tabel                | Fungsi                                                |
+| -------------------- | ----------------------------------------------------- |
+| `circle_profiles`    | Nama, avatar, status tamu, kode invite                |
+| `circle_friendships` | Relasi teman (`pending` / `accepted`)                 |
+| `circle_locations`   | Posisi terbaru, akurasi, status sharing, waktu update |
+
+Skrip SQL ada di `supabase/sql/` dan dijalankan berurutan.
+
+## Batasan yang perlu diketahui
+
+**Lokasi dan background**
+
+- Web app **tidak bisa melacak di background**. Lokasi hanya diperbarui saat Circlo **tampil di layar**. Saat tab atau PWA ditutup, dipindah ke app lain, atau layar terkunci, pengiriman berhenti. Teman melihatmu sebagai "terakhir dilihat".
+- Kalau perangkat diam, callback `watchPosition` bisa jarang terpanggil, sehingga heartbeat 30 detik tidak selalu terjadi dan marker bisa terlihat memudar walau app terbuka.
+- Marker teman bisa butuh hingga sekitar 30 detik untuk muncul setelah pertemanan diterima atau sharing dinyalakan kembali.
+- Hanya posisi terakhir yang disimpan, tidak ada riwayat rute.
+
+**Login dan perangkat**
+
+- Di iPhone, PWA di Home Screen punya penyimpanan terpisah dari Safari. Saat **login Google pertama kali di PWA**, daftar akun tersimpan tidak muncul dan akun perlu diketik. Setelah login, sesi tetap tersimpan.
+- Akun **Tamu tidak bisa berteman** dan tidak bisa dicari oleh teman. Tamu hanya melihat teman simulasi.
+- Teman di mode demo adalah **simulasi**, bukan pengguna sungguhan.
+- Penghapusan akun masih manual lewat email (lihat halaman Kebijakan Privasi).
+
+**Infrastruktur gratis**
+
+- **Supabase Free** otomatis di-_pause_ setelah 7 hari tanpa aktivitas dan harus direstore dari dashboard. Project ini berbagi database dengan aplikasi lain, sehingga ada risiko bentrok pengaturan Auth.
+- **MapTiler Free** punya kuota bulanan dan hanya untuk penggunaan non-komersial. Key dibatasi ke domain demo, sehingga peta tidak tampil di domain lain.
+- **Vercel Hobby** hanya untuk penggunaan personal non-komersial.
+- Batas gratis dapat berubah, cek halaman harga masing-masing penyedia.
+
+## Menjalankan secara lokal
+
+**Prasyarat:** Node.js, akun Supabase, dan API key MapTiler.
+
+```bash
+git clone https://github.com/USERNAME_KAMU/circlo.git
+cd circlo
+npm install
+```
+
+Buat `.env.local` di root project:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+NEXT_PUBLIC_MAPTILER_KEY=...
+```
+
+Setup Supabase:
+
+1. Jalankan skrip di `supabase/sql/` secara berurutan lewat SQL Editor.
+2. Aktifkan **Google** di _Authentication → Providers_ dan **Allow anonymous sign-ins**.
+3. Tambahkan `http://localhost:3000/**` dan URL deploy ke _Redirect URLs_.
+4. Pastikan tabel `circle_locations` dan `circle_friendships` ada di publikasi `supabase_realtime`.
+
+Jalankan:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Untuk mencoba PWA dan service worker (aktif hanya di production):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build && npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Catatan MapLibre:** worker peta disajikan dari `public/maplibre/` (`maplibre-gl-worker.mjs` dan `maplibre-gl-shared.mjs`) karena Turbopack tidak menyertakannya otomatis. Jika versi `maplibre-gl` di-upgrade, salin ulang kedua file itu dari `node_modules/maplibre-gl/dist/`.
 
-## Learn More
+## Privasi
 
-To learn more about Next.js, take a look at the following resources:
+Lokasi hanya terlihat oleh teman yang sudah diterima, dan kamu bisa mematikan pembagian kapan saja. Detail lengkap ada di halaman `/privacy`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Dibuat oleh **Dyala Muhammad Panahpertama** · [LinkedIn](https://linkedin.com/in/dyalamuhammad) · [GitHub](https://github.com/dyalamuhammad)
