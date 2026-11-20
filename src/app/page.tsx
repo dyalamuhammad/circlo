@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import FriendsPanel from "@/components/FriendsPanel";
 import IosInstallBanner from "@/components/IosInstallBanner";
 import { Users, MapPin, MapPinOff, LogOut } from "lucide-react";
+import NotifButton from "@/components/NotifButton";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
@@ -85,6 +86,7 @@ export default function Home() {
           {sharing ? <MapPin size={16} /> : <MapPinOff size={16} />}
           {sharing ? "ON" : "OFF"}
         </button>
+        {!user.is_anonymous && <NotifButton />}
         <button
           onClick={logout}
           aria-label="Keluar"
