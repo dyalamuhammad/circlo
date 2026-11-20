@@ -13,7 +13,10 @@ export default function NotifButton() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    getPushState().then(setState);
+    const refresh = () => getPushState().then(setState);
+    refresh();
+    window.addEventListener("circlo-push-change", refresh);
+    return () => window.removeEventListener("circlo-push-change", refresh);
   }, []);
 
   if (!state || state === "unsupported" || state === "ios-install") return null;

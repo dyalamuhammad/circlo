@@ -3,7 +3,7 @@ import Link from "next/link";
 export const metadata = { title: "Kebijakan Privasi · Circlo" };
 
 const EMAIL = "dyalamuhammad@gmail.com"; // ganti dengan emailmu
-const UPDATED = "18 November 2026";
+const UPDATED = "20 November 2026";
 
 export default function PrivacyPage() {
   return (
@@ -45,6 +45,15 @@ export default function PrivacyPage() {
               <b>Pertemanan:</b> daftar permintaan dan teman, serta kode invite
               milikmu.
             </li>
+            <li>
+              <b>Langganan notifikasi:</b> alamat endpoint push dan kunci
+              enkripsi dari browser atau perangkatmu, plus informasi jenis
+              browser. Data ini hanya dibuat jika kamu mengaktifkan notifikasi.
+            </li>
+            <li>
+              <b>Catatan ping:</b> siapa mengirim ping ke siapa dan waktunya,
+              dipakai untuk membatasi frekuensi ping.
+            </li>
           </ul>
         </section>
 
@@ -72,6 +81,31 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2 className="text-lg font-bold">Notifikasi</h2>
+          <p className="mt-2">
+            Notifikasi bersifat opsional dan hanya aktif setelah kamu
+            mengizinkannya. Ada dua jenis:
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>
+              <b>Pengingat rutin:</b> maksimal dua kali sehari (sekitar pukul
+              08.00 dan 18.00 WIB), dan hanya jika lokasimu sudah lama tidak
+              diperbarui. Isinya mengajakmu membuka Circlo.
+            </li>
+            <li>
+              <b>Ping dari teman:</b> hanya dari teman yang sudah kamu terima,
+              dengan batas satu ping per teman setiap 15 menit.
+            </li>
+          </ul>
+          <p className="mt-2">
+            Kamu bisa mematikannya kapan saja lewat ikon lonceng di bar atas,
+            atau lewat pengaturan browser. Saat dimatikan, data langgananmu
+            dihapus dari database kami. Di iPhone, notifikasi hanya tersedia
+            jika Circlo dipasang ke Home Screen.
+          </p>
+        </section>
+
+        <section>
           <h2 className="text-lg font-bold">Layanan pihak ketiga</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
@@ -86,6 +120,16 @@ export default function PrivacyPage() {
             </li>
             <li>
               <b>Vercel:</b> hosting aplikasi.
+            </li>
+            <li>
+              <b>Layanan push browser (Google, Apple, Mozilla):</b> notifikasi
+              diteruskan lewat server push milik vendor browsermu. Isinya
+              terenkripsi.
+            </li>
+            <li>
+              <b>Upstash QStash:</b> penjadwal yang memicu pengingat rutin.
+              Layanan ini hanya memanggil server kami sesuai jadwal dan tidak
+              menerima data pribadimu.
             </li>
           </ul>
           <p className="mt-2">

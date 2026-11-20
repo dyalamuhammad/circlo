@@ -69,6 +69,7 @@ export async function enablePush() {
   );
   if (error) throw new Error(error.message);
   if (data !== "ok") throw new Error(`Gagal menyimpan langganan: ${data}`);
+  window.dispatchEvent(new Event("circlo-push-change"));
 }
 
 export async function disablePush() {
@@ -80,4 +81,5 @@ export async function disablePush() {
     .delete()
     .eq("endpoint", sub.endpoint);
   await sub.unsubscribe();
+  window.dispatchEvent(new Event("circlo-push-change"));
 }

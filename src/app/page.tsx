@@ -9,6 +9,7 @@ import FriendsPanel from "@/components/FriendsPanel";
 import IosInstallBanner from "@/components/IosInstallBanner";
 import { Users, MapPin, MapPinOff, LogOut } from "lucide-react";
 import NotifButton from "@/components/NotifButton";
+import NotifBanner from "@/components/NotifBanner";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
@@ -149,6 +150,7 @@ export default function Home() {
           onClose={() => setShowFriends(false)}
         />
       )}
+      {!user.is_anonymous && <NotifBanner />}
       <IosInstallBanner />
     </main>
   );
