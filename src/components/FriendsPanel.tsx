@@ -1,8 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Locate } from "lucide-react";
-
+import { Locate, BellRing } from "lucide-react";
 type Row = {
   id: string;
   requester_id: string;
@@ -19,6 +18,14 @@ const MESSAGES: Record<string, string> = {
   self: "Itu kode kamu sendiri.",
   target_is_guest: "User guest tidak bisa berteman.",
   guest_not_allowed: "Guest tidak bisa menambah teman.",
+};
+
+const PING_MESSAGES: Record<string, string> = {
+  ok: "Ping terkirim 📍",
+  no_subscription: "Teman ini belum mengaktifkan notifikasi.",
+  not_friends: "Kalian belum berteman.",
+  guest_not_allowed: "Guest tidak bisa mengirim ping.",
+  delivery_failed: "Gagal mengirim, coba lagi nanti.",
 };
 
 type Props = {
@@ -40,6 +47,8 @@ export default function FriendsPanel({
   const [items, setItems] = useState<Item[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [live, setLive] = useState<Set<string>>(new Set());
+  const [pingMsg, setPingMsg] = useState<string | null>(null);
+  const [pinging, setPinging] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data: me } = await supabase
@@ -104,6 +113,27 @@ export default function FriendsPanel({
   const remove = async (id: string) => {
     await supabase.from("circle_friendships").delete().eq("id", id);
     load();
+  };
+
+  const ping = async (fid: string) => {
+    setPinging(fid);
+    setPingMsg(null);
+    try {
+      const r = await fetch("/api/push/ping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ friendId: fid }),
+      });
+      const j = await r.json();
+      setPingMsg(
+        j.status === "rate_limited"
+          ? `Tunggu ${Math.ceil((j.retry_in ?? 60) / 60)} menit lagi sebelum ping lagi.`
+          : (PING_MESSAGES[j.status] ?? "Gagal mengirim ping."),
+      );
+    } catch {
+      setPingMsg("Gagal mengirim ping.");
+    }
+    setPinging(null);
   };
 
   const incoming = items.filter(
@@ -213,6 +243,7 @@ export default function FriendsPanel({
 
           <div>
             <p className="mb-1 font-semibold">Teman ({friends.length})</p>
+            {pingMsg && <p className="mb-1 text-xs text-gray-600">{pingMsg}</p>}
             {friends.length === 0 && (
               <p className="text-gray-500">Belum ada teman.</p>
             )}
@@ -239,6 +270,15 @@ export default function FriendsPanel({
                         Lokasi tidak tersedia
                       </span>
                     )}
+                    <button
+                      onClick={() => ping(fid)}
+                      disabled={pinging === fid}
+                      aria-label="Ping"
+                      title="Ping"
+                      className="btn-glass flex h-7 w-7 items-center justify-center rounded disabled:opacity-50"
+                    >
+                      <BellRing size={14} />
+                    </button>
                     <button
                       onClick={() => remove(i.id)}
                       className="rounded border px-2 py-1"

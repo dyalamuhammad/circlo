@@ -39,11 +39,10 @@ export async function getPushState(): Promise<PushState> {
 }
 
 export async function enablePush() {
-  const reg = await navigator.serviceWorker.getRegistration();
-  if (!reg)
-    throw new Error(
-      "Service worker belum aktif. Tes lewat npm run build && npm start.",
-    );
+  const reg =
+    (await navigator.serviceWorker.getRegistration()) ??
+    (await navigator.serviceWorker.register("/sw.js"));
+  await navigator.serviceWorker.ready;
 
   const perm = await Notification.requestPermission();
   if (perm !== "granted") throw new Error("Izin notifikasi tidak diberikan.");
