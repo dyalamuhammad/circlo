@@ -1,7 +1,20 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Locate, BellRing } from "lucide-react";
+import {
+  BellRing,
+  Check,
+  CircleCheck,
+  Copy,
+  Info,
+  Locate,
+  MapPin,
+  Trash2,
+  UserPlus,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+
 type Row = {
   id: string;
   requester_id: string;
@@ -9,24 +22,37 @@ type Row = {
   status: "pending" | "accepted";
 };
 type Item = Row & { name: string };
+type Note = { text: string; ok: boolean; icon?: LucideIcon };
 
-const MESSAGES: Record<string, string> = {
-  requested: "Permintaan terkirim ✅",
-  accepted: "Kalian sekarang berteman ✅",
-  pending: "Permintaan sudah terkirim, menunggu diterima.",
-  not_found: "Kode tidak ditemukan.",
-  self: "Itu kode kamu sendiri.",
-  target_is_guest: "User guest tidak bisa berteman.",
-  guest_not_allowed: "Guest tidak bisa menambah teman.",
+const warn = (text: string): Note => ({ text, ok: false });
+
+const MESSAGES: Record<string, Note> = {
+  requested: { text: "Permintaan terkirim", ok: true },
+  accepted: { text: "Kalian sekarang berteman", ok: true },
+  pending: warn("Permintaan sudah terkirim, menunggu diterima."),
+  not_found: warn("Kode tidak ditemukan."),
+  self: warn("Itu kode kamu sendiri."),
+  target_is_guest: warn("User guest tidak bisa berteman."),
+  guest_not_allowed: warn("Guest tidak bisa menambah teman."),
 };
 
-const PING_MESSAGES: Record<string, string> = {
-  ok: "Ping terkirim 📍",
-  no_subscription: "Teman ini belum mengaktifkan notifikasi.",
-  not_friends: "Kalian belum berteman.",
-  guest_not_allowed: "Guest tidak bisa mengirim ping.",
-  delivery_failed: "Gagal mengirim, coba lagi nanti.",
+const PING_MESSAGES: Record<string, Note> = {
+  ok: { text: "Ping terkirim", ok: true, icon: MapPin },
+  no_subscription: warn("Teman ini belum mengaktifkan notifikasi."),
+  not_friends: warn("Kalian belum berteman."),
+  guest_not_allowed: warn("Guest tidak bisa mengirim ping."),
+  delivery_failed: warn("Gagal mengirim, coba lagi nanti."),
 };
+
+function Notice({ note }: { note: Note }) {
+  const Icon = note.icon ?? (note.ok ? CircleCheck : Info);
+  return (
+    <p className="mt-2 flex items-start gap-1.5 text-xs font-semibold text-[#1a2e05]">
+      <Icon size={14} className="mt-px shrink-0" />
+      <span className="opacity-80">{note.text}</span>
+    </p>
+  );
+}
 
 type Props = {
   userId: string;
@@ -45,10 +71,11 @@ export default function FriendsPanel({
   const [code, setCode] = useState("");
   const [input, setInput] = useState("");
   const [items, setItems] = useState<Item[]>([]);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<Note | null>(null);
   const [live, setLive] = useState<Set<string>>(new Set());
-  const [pingMsg, setPingMsg] = useState<string | null>(null);
+  const [pingMsg, setPingMsg] = useState<Note | null>(null);
   const [pinging, setPinging] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
     const { data: me } = await supabase
@@ -97,7 +124,11 @@ export default function FriendsPanel({
     const { data, error } = await supabase.rpc("circle_add_friend_by_code", {
       p_code: input,
     });
-    setMsg(error ? error.message : (MESSAGES[data as string] ?? String(data)));
+    setMsg(
+      error
+        ? warn(error.message)
+        : (MESSAGES[data as string] ?? warn(String(data))),
+    );
     setInput("");
     load();
   };
@@ -115,6 +146,12 @@ export default function FriendsPanel({
     load();
   };
 
+  const copyCode = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   const ping = async (fid: string) => {
     setPinging(fid);
     setPingMsg(null);
@@ -127,11 +164,13 @@ export default function FriendsPanel({
       const j = await r.json();
       setPingMsg(
         j.status === "rate_limited"
-          ? `Tunggu ${Math.ceil((j.retry_in ?? 60) / 60)} menit lagi sebelum ping lagi.`
-          : (PING_MESSAGES[j.status] ?? "Gagal mengirim ping."),
+          ? warn(
+              `Tunggu ${Math.ceil((j.retry_in ?? 60) / 60)} menit lagi sebelum ping lagi.`,
+            )
+          : (PING_MESSAGES[j.status] ?? warn("Gagal mengirim ping.")),
       );
     } catch {
-      setPingMsg("Gagal mengirim ping.");
+      setPingMsg(warn("Gagal mengirim ping."));
     }
     setPinging(null);
   };
@@ -145,150 +184,181 @@ export default function FriendsPanel({
   const friends = items.filter((i) => i.status === "accepted");
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 max-h-[70dvh] overflow-y-auto rounded-t-2xl bg-white p-4 shadow-2xl sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-96 sm:rounded-2xl">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold">Teman</h2>
-        <button onClick={onClose} className="text-sm underline">
-          Tutup
+    <div className="glass-panel absolute inset-x-0 bottom-0 z-20 max-h-[70dvh] overflow-y-auto rounded-t-[2rem] p-5 text-[#1a2e05] sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-96 sm:rounded-[2rem]">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-xl font-extrabold tracking-tight">Teman</h2>
+        <button
+          onClick={onClose}
+          aria-label="Tutup"
+          className="btn-glass flex h-9 w-9 items-center justify-center rounded-full"
+        >
+          <X size={16} />
         </button>
       </div>
 
       {isGuest ? (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm font-medium opacity-75">
           Guest tidak bisa berteman. Login dengan Google untuk memakai fitur
           ini.
         </p>
       ) : (
-        <div className="space-y-4 text-sm">
+        <div className="space-y-5 text-sm">
+          {/* Kode invite */}
           <div>
-            <p className="text-gray-500">Kode invite kamu</p>
-            <div className="flex items-center gap-2">
+            <p className="mb-1.5 font-semibold opacity-60">Kode invite kamu</p>
+            <div className="glass-row flex items-center justify-between rounded-2xl py-2 pr-2 pl-4">
               <span className="font-mono text-xl font-bold tracking-widest">
                 {code}
               </span>
               <button
-                onClick={() => navigator.clipboard.writeText(code)}
-                className="rounded border px-2 py-1 text-xs"
+                onClick={copyCode}
+                className="btn-glass flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold"
               >
-                Salin
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                {copied ? "Tersalin" : "Salin"}
               </button>
             </div>
           </div>
 
+          {/* Tambah teman */}
           <div>
             <div className="flex gap-2">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addFriend()}
                 placeholder="Kode teman"
-                className="w-full rounded border px-3 py-2 uppercase"
+                className="glass-field w-full min-w-0 rounded-2xl px-4 py-3 font-semibold uppercase"
               />
               <button
                 onClick={addFriend}
-                className="rounded bg-brand px-3 py-2 font-semibold"
+                className="btn-solid flex shrink-0 items-center gap-1.5 rounded-2xl px-4 py-3 font-bold"
               >
+                <UserPlus size={16} />
                 Tambah
               </button>
             </div>
-            {msg && <p className="mt-1 text-xs text-gray-600">{msg}</p>}
+            {msg && <Notice note={msg} />}
           </div>
 
+          {/* Permintaan masuk */}
           {incoming.length > 0 && (
             <div>
-              <p className="mb-1 font-semibold">Permintaan masuk</p>
-              {incoming.map((i) => (
-                <div
-                  key={i.id}
-                  className="flex items-center justify-between py-1"
-                >
-                  <span>{i.name}</span>
-                  <span className="flex gap-2">
-                    <button
-                      onClick={() => accept(i.id)}
-                      className="rounded bg-brand px-2 py-1 font-semibold"
-                    >
-                      Terima
-                    </button>
-                    <button
-                      onClick={() => remove(i.id)}
-                      className="rounded border px-2 py-1"
-                    >
-                      Tolak
-                    </button>
-                  </span>
-                </div>
-              ))}
+              <p className="mb-2 font-bold">Permintaan masuk</p>
+              <div className="space-y-2">
+                {incoming.map((i) => (
+                  <div
+                    key={i.id}
+                    className="glass-row flex items-center justify-between gap-2 rounded-2xl p-2.5 pl-4"
+                  >
+                    <span className="truncate font-semibold">{i.name}</span>
+                    <span className="flex shrink-0 gap-1.5">
+                      <button
+                        onClick={() => accept(i.id)}
+                        className="btn-solid flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold"
+                      >
+                        <Check size={14} />
+                        Terima
+                      </button>
+                      <button
+                        onClick={() => remove(i.id)}
+                        className="btn-glass rounded-xl px-3 py-1.5 text-xs font-bold"
+                      >
+                        Tolak
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
+          {/* Menunggu */}
           {outgoing.length > 0 && (
             <div>
-              <p className="mb-1 font-semibold">Menunggu diterima</p>
-              {outgoing.map((i) => (
-                <div
-                  key={i.id}
-                  className="flex items-center justify-between py-1"
-                >
-                  <span>{i.name}</span>
-                  <button
-                    onClick={() => remove(i.id)}
-                    className="rounded border px-2 py-1"
+              <p className="mb-2 font-bold">Menunggu diterima</p>
+              <div className="space-y-2">
+                {outgoing.map((i) => (
+                  <div
+                    key={i.id}
+                    className="glass-row flex items-center justify-between gap-2 rounded-2xl p-2.5 pl-4"
                   >
-                    Batal
-                  </button>
-                </div>
-              ))}
+                    <span className="truncate font-semibold">{i.name}</span>
+                    <button
+                      onClick={() => remove(i.id)}
+                      className="btn-glass rounded-xl px-3 py-1.5 text-xs font-bold"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
+          {/* Daftar teman */}
           <div>
-            <p className="mb-1 font-semibold">Teman ({friends.length})</p>
-            {pingMsg && <p className="mb-1 text-xs text-gray-600">{pingMsg}</p>}
+            <p className="mb-2 font-bold">
+              Teman{" "}
+              <span className="ml-1 rounded-full bg-[#1a2e05] px-2 py-0.5 text-xs text-[#d9f99d]">
+                {friends.length}
+              </span>
+            </p>
+            {pingMsg && <Notice note={pingMsg} />}
             {friends.length === 0 && (
-              <p className="text-gray-500">Belum ada teman.</p>
+              <p className="font-medium opacity-60">Belum ada teman.</p>
             )}
-            {friends.map((i) => {
-              const fid =
-                i.requester_id === userId ? i.addressee_id : i.requester_id;
-              return (
-                <div
-                  key={i.id}
-                  className="flex items-center justify-between py-1"
-                >
-                  <span>{i.name}</span>
-                  <span className="flex items-center gap-2">
-                    {live.has(fid) ? (
-                      <button
-                        onClick={() => onLocate(fid)}
-                        className="bg-brand flex items-center gap-1 rounded px-2 py-1 font-semibold"
-                      >
-                        <Locate size={14} />
-                        Lihat
-                      </button>
-                    ) : (
-                      <span className="text-xs text-gray-400">
-                        Lokasi tidak tersedia
+            <div className="mt-2 space-y-2">
+              {friends.map((i) => {
+                const fid =
+                  i.requester_id === userId ? i.addressee_id : i.requester_id;
+                return (
+                  <div
+                    key={i.id}
+                    className="glass-row flex items-center justify-between gap-2 rounded-2xl p-2.5 pl-4"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold">
+                        {i.name}
                       </span>
-                    )}
-                    <button
-                      onClick={() => ping(fid)}
-                      disabled={pinging === fid}
-                      aria-label="Ping"
-                      title="Ping"
-                      className="btn-glass flex h-7 w-7 items-center justify-center rounded disabled:opacity-50"
-                    >
-                      <BellRing size={14} />
-                    </button>
-                    <button
-                      onClick={() => remove(i.id)}
-                      className="rounded border px-2 py-1"
-                    >
-                      Hapus
-                    </button>
-                  </span>
-                </div>
-              );
-            })}
+                      {!live.has(fid) && (
+                        <span className="block text-[11px] font-medium opacity-55">
+                          Lokasi tidak tersedia
+                        </span>
+                      )}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      {live.has(fid) && (
+                        <button
+                          onClick={() => onLocate(fid)}
+                          className="btn-solid flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold"
+                        >
+                          <Locate size={14} />
+                          Lihat
+                        </button>
+                      )}
+                      <button
+                        onClick={() => ping(fid)}
+                        disabled={pinging === fid}
+                        aria-label="Ping"
+                        title="Ping"
+                        className="btn-glass flex h-8 w-8 items-center justify-center rounded-xl disabled:opacity-50"
+                      >
+                        <BellRing size={14} />
+                      </button>
+                      <button
+                        onClick={() => remove(i.id)}
+                        aria-label="Hapus teman"
+                        title="Hapus"
+                        className="btn-glass flex h-8 w-8 items-center justify-center rounded-xl"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

@@ -51,11 +51,6 @@ export default function NotifButton() {
       >
         {state === "on" ? <Bell size={16} /> : <BellOff size={16} />}
       </button>
-      {state === "on" && (
-        <button onClick={test} className="btn-glass rounded-full px-3 py-1">
-          Tes
-        </button>
-      )}
     </>
   );
 }

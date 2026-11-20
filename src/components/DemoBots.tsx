@@ -54,7 +54,7 @@ export default function DemoBots({
   }, [map, center]);
 
   return (
-    <div className="absolute left-3 top-16 z-10 max-w-[260px] rounded-lg bg-white/90 px-3 py-2 text-xs text-gray-700 shadow">
+    <div className="absolute left-3 top-36 z-10 max-w-[260px] rounded-lg bg-white/90 px-3 py-2 text-xs text-gray-700 shadow">
       <b>Mode demo:</b> teman di peta adalah simulasi. Login dengan Google untuk
       berteman sungguhan.
     </div>
