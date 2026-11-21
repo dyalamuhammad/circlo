@@ -36,13 +36,18 @@ export async function POST(req: Request) {
   webpush.setVapidDetails(subject, pub, priv);
 
   let sent = 0;
+  const PING_TEXTS = [
+    "Hi, kamu di mana? Aku lagi online 📍",
+    "Lagi di mana nih? Buka Circlo yuk, aku udah online 👀",
+    "Psst, posisimu di mana sekarang? Aku lagi online 📍",
+  ];
   for (const s of data.subs as Sub[]) {
     try {
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth_key } },
         JSON.stringify({
           title: data.sender_name,
-          body: "Hi, kamu di mana? Aku lagi online 📍",
+          body: PING_TEXTS[Math.floor(Math.random() * PING_TEXTS.length)],
           tag: `ping-${user.id}`,
           url: "/",
         }),

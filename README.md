@@ -28,6 +28,7 @@ Berbagi lokasi realtime dengan teman, terinspirasi dari Find My dan Zenly. Web a
 - Tampilan glass dengan tema lime
 - **Notifikasi push** (opsional): ping dari teman ("kamu di mana?") dan pengingat rutin untuk membuka Circlo
 - Banner ajakan aktifkan notifikasi, plus tombol lonceng di bar atas
+- Nama area lokasi teman (reverse geocoding MapTiler) dan kartu teman yang bisa diklik untuk terbang ke lokasinya
 
 ## Tech stack
 

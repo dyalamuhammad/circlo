@@ -3,7 +3,7 @@ import Link from "next/link";
 export const metadata = { title: "Kebijakan Privasi · Circlo" };
 
 const EMAIL = "dyalamuhammad@gmail.com"; // ganti dengan emailmu
-const UPDATED = "20 November 2026";
+const UPDATED = "21 November 2026";
 
 export default function PrivacyPage() {
   return (
@@ -115,8 +115,11 @@ export default function PrivacyPage() {
               <b>Google:</b> proses masuk dengan Google.
             </li>
             <li>
-              <b>MapTiler:</b> penyedia peta. Browsermu meminta gambar peta
-              langsung ke MapTiler, sehingga alamat IP-mu terlihat oleh mereka.
+              <b>MapTiler:</b> penyedia peta dan nama tempat. Browsermu meminta
+              gambar peta langsung ke MapTiler, sehingga alamat IP-mu terlihat
+              oleh mereka. Koordinat teman yang ditampilkan di daftar teman juga
+              dikirim ke MapTiler untuk diubah menjadi nama area (misalnya
+              kota).
             </li>
             <li>
               <b>Vercel:</b> hosting aplikasi.
