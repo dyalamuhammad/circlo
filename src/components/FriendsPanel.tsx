@@ -1,13 +1,13 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { agoLabel, reverseGeocode } from "@/lib/placeLabel";
 import {
   BellRing,
   Check,
   CircleCheck,
   Copy,
   Info,
-  Locate,
   MapPin,
   Trash2,
   UserPlus,
@@ -73,6 +73,10 @@ export default function FriendsPanel({
   const [items, setItems] = useState<Item[]>([]);
   const [msg, setMsg] = useState<Note | null>(null);
   const [live, setLive] = useState<Set<string>>(new Set());
+  const [info, setInfo] = useState<
+    Record<string, { lat: number; lng: number; at: string }>
+  >({});
+  const [places, setPlaces] = useState<Record<string, string>>({});
   const [pingMsg, setPingMsg] = useState<Note | null>(null);
   const [pinging, setPinging] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -109,9 +113,16 @@ export default function FriendsPanel({
     );
     const { data: locs } = await supabase
       .from("circle_locations")
-      .select("user_id, sharing");
-    setLive(
-      new Set((locs ?? []).filter((l) => l.sharing).map((l) => l.user_id)),
+      .select("user_id, lat, lng, sharing, updated_at");
+    const on = (locs ?? []).filter((l) => l.sharing);
+    setLive(new Set(on.map((l) => l.user_id)));
+    setInfo(
+      Object.fromEntries(
+        on.map((l) => [
+          l.user_id,
+          { lat: l.lat, lng: l.lng, at: l.updated_at },
+        ]),
+      ),
     );
   }, [supabase, userId]);
 
@@ -119,6 +130,16 @@ export default function FriendsPanel({
     if (!isGuest) load();
   }, [isGuest, load]);
 
+  useEffect(() => {
+    Object.entries(info).forEach(([id, p]) => {
+      if (id === userId) return;
+      reverseGeocode(p.lat, p.lng).then((name) =>
+        setPlaces((prev) =>
+          prev[id] === name ? prev : { ...prev, [id]: name },
+        ),
+      );
+    });
+  }, [info, userId]);
   const addFriend = async () => {
     if (!input.trim()) return;
     const { data, error } = await supabase.rpc("circle_add_friend_by_code", {
@@ -312,33 +333,41 @@ export default function FriendsPanel({
               {friends.map((i) => {
                 const fid =
                   i.requester_id === userId ? i.addressee_id : i.requester_id;
+                const isLive = live.has(fid);
+                const sub = isLive
+                  ? [places[fid], agoLabel(info[fid].at)]
+                      .filter(Boolean)
+                      .join(" · ")
+                  : "Lokasi tidak tersedia";
                 return (
                   <div
                     key={i.id}
-                    className="glass-row flex items-center justify-between gap-2 rounded-2xl p-2.5 pl-4"
+                    role={isLive ? "button" : undefined}
+                    tabIndex={isLive ? 0 : undefined}
+                    onClick={() => isLive && onLocate(fid)}
+                    onKeyDown={(e) =>
+                      isLive && e.key === "Enter" && onLocate(fid)
+                    }
+                    className={`glass-row flex items-center justify-between gap-2 rounded-2xl p-2.5 pl-4 ${
+                      isLive
+                        ? "cursor-pointer transition active:scale-[0.98]"
+                        : ""
+                    }`}
                   >
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">
                         {i.name}
                       </span>
-                      {!live.has(fid) && (
-                        <span className="block text-[11px] font-medium opacity-55">
-                          Lokasi tidak tersedia
-                        </span>
-                      )}
+                      <span className="block truncate text-[11px] font-medium opacity-60">
+                        {sub}
+                      </span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5">
-                      {live.has(fid) && (
-                        <button
-                          onClick={() => onLocate(fid)}
-                          className="btn-solid flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold"
-                        >
-                          <Locate size={14} />
-                          Lihat
-                        </button>
-                      )}
                       <button
-                        onClick={() => ping(fid)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          ping(fid);
+                        }}
                         disabled={pinging === fid}
                         aria-label="Ping"
                         title="Ping"
@@ -347,7 +376,10 @@ export default function FriendsPanel({
                         <BellRing size={14} />
                       </button>
                       <button
-                        onClick={() => remove(i.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          remove(i.id);
+                        }}
                         aria-label="Hapus teman"
                         title="Hapus"
                         className="btn-glass flex h-8 w-8 items-center justify-center rounded-xl"
