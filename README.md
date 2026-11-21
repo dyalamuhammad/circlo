@@ -26,28 +26,23 @@ Berbagi lokasi realtime dengan teman, terinspirasi dari Find My dan Zenly. Web a
 - **PWA**: bisa dipasang ke Home Screen, dengan banner petunjuk khusus Safari iPhone
 - **Mode demo** untuk tamu: tiga teman simulasi bergerak di sekitar posisimu
 - Tampilan glass dengan tema lime
+- **Notifikasi push** (opsional): ping dari teman ("kamu di mana?") dan pengingat rutin untuk membuka Circlo
+- Banner ajakan aktifkan notifikasi, plus tombol lonceng di bar atas
 
 ## Tech stack
 
-| Bagian   | Teknologi                                                            |
-| -------- | -------------------------------------------------------------------- |
-| Frontend | Next.js (App Router), React, TypeScript, Tailwind CSS                |
-| Peta     | MapLibre GL JS + tile MapTiler                                       |
-| Backend  | Supabase: Auth, PostgreSQL, Realtime (WebSocket), Row Level Security |
-| PWA      | Web App Manifest + service worker minimal                            |
-| Deploy   | Vercel                                                               |
-| Ikon     | lucide-react                                                         |
+| Bagian     | Teknologi                                                            |
+| ---------- | -------------------------------------------------------------------- |
+| Frontend   | Next.js (App Router), React, TypeScript, Tailwind CSS                |
+| Peta       | MapLibre GL JS + tile MapTiler                                       |
+| Backend    | Supabase: Auth, PostgreSQL, Realtime (WebSocket), Row Level Security |
+| PWA        | Web App Manifest + service worker minimal                            |
+| Deploy     | Vercel                                                               |
+| Ikon       | lucide-react                                                         |
+| Notifikasi | Web Push API (VAPID) dengan library `web-push`                       |
+| Penjadwal  | Upstash QStash (cron untuk pengingat rutin)                          |
 
 ## Arsitektur
-
-```mermaid
-flowchart LR
-  A[Browser / PWA] -- watchPosition --> B[Throttle & upsert]
-  B --> C[(Supabase Postgres<br/>circle_locations)]
-  C -- Realtime WebSocket --> D[Browser teman]
-  D --> E[MapLibre marker bergerak]
-  A -- OAuth --> F[Google via Supabase Auth]
-```
 
 Alur singkat:
 
@@ -55,6 +50,13 @@ Alur singkat:
 2. Posisi dikirim dengan **throttle**: minimal tiap 5 detik jika bergeser lebih dari 10 m, atau heartbeat tiap 30 detik.
 3. Hanya **posisi terbaru** per user yang disimpan (upsert), bukan riwayat.
 4. Teman menerima perubahan lewat Supabase Realtime dan marker bergerak otomatis.
+
+Alur notifikasi:
+
+1. User mengaktifkan notifikasi, browser membuat langganan push yang disimpan di `circle_push_subscriptions`.
+2. **Ping teman:** API route memanggil fungsi SQL yang memvalidasi pertemanan dan batas frekuensi, lalu server mengirim push.
+3. **Pengingat rutin:** QStash memanggil `/api/cron/reminder` sesuai jadwal (08.00 dan 18.00 WIB). Request diverifikasi lewat signature, lalu server mengirim push hanya ke user yang lokasinya sudah lama tidak diperbarui dan sharing-nya aktif.
+4. Mengetuk notifikasi membuka Circlo, sehingga lokasi langsung diperbarui.
 
 ### Keputusan teknis
 
@@ -64,14 +66,20 @@ Alur singkat:
 - **Tambah teman hanya lewat fungsi SQL** `circle_add_friend_by_code`, yang menolak akun tamu. Tabel pertemanan tidak punya izin insert langsung.
 - **Mode demo berjalan di browser**, tanpa menulis data palsu ke database.
 - **Prefix `circle_`** pada semua tabel, fungsi, dan policy karena project Supabase dipakai bersama aplikasi lain.
+- **Web Push langsung dengan VAPID**, tanpa Firebase, agar tidak menambah ketergantungan layanan.
+- **Satu jadwal QStash untuk semua user.** Endpoint yang memilih target dan mengirim, jadi pemakaian pesan QStash sangat kecil dan aman di free tier.
+- **Pengingat yang tidak mengganggu:** dilewati untuk user yang lokasinya masih baru atau sharing-nya mati, dan tidak dikirim di malam hari.
+- **Anti-spam ping:** hanya teman _accepted_, tamu ditolak, maksimal satu ping per pasangan setiap 15 menit, divalidasi di fungsi SQL.
 
 ### Skema database
 
-| Tabel                | Fungsi                                                |
-| -------------------- | ----------------------------------------------------- |
-| `circle_profiles`    | Nama, avatar, status tamu, kode invite                |
-| `circle_friendships` | Relasi teman (`pending` / `accepted`)                 |
-| `circle_locations`   | Posisi terbaru, akurasi, status sharing, waktu update |
+| Tabel                       | Fungsi                                                |
+| --------------------------- | ----------------------------------------------------- |
+| `circle_profiles`           | Nama, avatar, status tamu, kode invite                |
+| `circle_friendships`        | Relasi teman (`pending` / `accepted`)                 |
+| `circle_locations`          | Posisi terbaru, akurasi, status sharing, waktu update |
+| `circle_push_subscriptions` | Langganan notifikasi per perangkat                    |
+| `circle_pings`              | Catatan ping, dipakai untuk pembatasan frekuensi      |
 
 Skrip SQL ada di `supabase/sql/` dan dijalankan berurutan.
 
@@ -98,6 +106,14 @@ Skrip SQL ada di `supabase/sql/` dan dijalankan berurutan.
 - **Vercel Hobby** hanya untuk penggunaan personal non-komersial.
 - Batas gratis dapat berubah, cek halaman harga masing-masing penyedia.
 
+**Notifikasi**
+
+- Notifikasi **tidak memperbarui lokasi dengan sendirinya**. Ia hanya mengingatkan, dan lokasi baru terkirim setelah Circlo dibuka.
+- Di **iPhone**, notifikasi hanya bekerja jika Circlo **dipasang ke Home Screen** (iOS 16.4 ke atas), dan izin harus diminta lewat tombol.
+- Notifikasi hanya untuk akun Google. Tamu tidak bisa menerima maupun mengirim ping.
+- Teman harus sudah mengaktifkan notifikasi untuk bisa menerima ping.
+- Pengiriman bergantung pada layanan push milik browser (Google, Apple, Mozilla), sehingga waktu tiba bisa tertunda dan tidak dijamin.
+
 ## Menjalankan secara lokal
 
 **Prasyarat:** Node.js, akun Supabase, dan API key MapTiler.
@@ -114,6 +130,15 @@ Buat `.env.local` di root project:
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 NEXT_PUBLIC_MAPTILER_KEY=...
+
+# Notifikasi (opsional untuk pengembangan lokal)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:emailkamu@example.com
+SUPABASE_SECRET_KEY=sb_secret_...
+QSTASH_CURRENT_SIGNING_KEY=...
+QSTASH_NEXT_SIGNING_KEY=...
+REMINDER_STALE_HOURS=6
 ```
 
 Setup Supabase:
