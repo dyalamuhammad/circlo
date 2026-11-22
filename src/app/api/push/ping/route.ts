@@ -40,6 +40,7 @@ export async function POST(req: Request) {
     "Hi, kamu di mana? Aku lagi online 📍",
     "Lagi di mana nih? Buka Circlo yuk, aku udah online 👀",
     "Psst, posisimu di mana sekarang? Aku lagi online 📍",
+    "Hi Aku lagi di sini ya!",
   ];
   for (const s of data.subs as Sub[]) {
     try {
