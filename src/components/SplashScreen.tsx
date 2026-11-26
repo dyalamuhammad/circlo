@@ -54,7 +54,7 @@ function Orbit({
   );
 }
 
-export default function SplashScreen() {
+export default function SplashScreen({ progress = 0 }: { progress?: number }) {
   const [go, setGo] = useState(false);
   const [msgs, setMsgs] = useState<string[]>([]);
   const [i, setI] = useState(0);
@@ -202,7 +202,10 @@ export default function SplashScreen() {
 
         <div className="sp-load mt-8 flex flex-col items-center gap-3">
           <div className="sp-track">
-            <div className="sp-bar" />
+            <div
+              className="sp-bar"
+              style={{ width: `${Math.max(progress, 4)}%` }}
+            />
           </div>
           <p key={i} className="sp-status">
             {msgs[i] ?? "\u00a0"}

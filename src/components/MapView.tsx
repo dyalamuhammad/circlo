@@ -16,6 +16,8 @@ type Props = {
   demo?: boolean;
   focus?: { id: string; n: number } | null;
   onPosition?: (p: { lat: number; lng: number }) => void;
+  onReady?: () => void;
+  onProgress?: (s: "style" | "located") => void;
 };
 
 export default function MapView({
@@ -26,6 +28,8 @@ export default function MapView({
   demo,
   focus,
   onPosition,
+  onReady,
+  onProgress,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +42,14 @@ export default function MapView({
     sharingRef.current = sharing;
   }, [sharing]);
   const onPositionRef = useRef(onPosition);
+  const onReadyRef = useRef(onReady);
+  const onProgressRef = useRef(onProgress);
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+  }, [onProgress]);
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
   useEffect(() => {
     onPositionRef.current = onPosition;
   }, [onPosition]);
@@ -54,6 +66,23 @@ export default function MapView({
       zoom: 3,
     });
     setMapInstance(map);
+    let located = false;
+    let ready = false;
+    const finish = () => {
+      if (!ready && located && map.loaded()) {
+        ready = true;
+        onReadyRef.current?.();
+      }
+    };
+    map.on("idle", finish);
+    map.on("load", () => onProgressRef.current?.("style"));
+    const markLocated = () => {
+      if (located) return;
+      located = true;
+      onProgressRef.current?.("located");
+      finish();
+    };
+    const locateTimer = setTimeout(markLocated, 6000);
 
     // elemen marker custom (avatar / inisial)
     const el = document.createElement("div");
@@ -81,7 +110,8 @@ export default function MapView({
         lastPos.current = lngLat;
         marker.setLngLat(lngLat).addTo(map);
         if (firstFix) {
-          map.flyTo({ center: lngLat, zoom: 16 });
+          map.jumpTo({ center: lngLat, zoom: 16 });
+          markLocated();
           setMyPos(lngLat);
           firstFix = false;
         }
@@ -97,12 +127,14 @@ export default function MapView({
             pos.coords.accuracy,
           );
       },
-      (err) =>
+      (err) => {
         setError(
           err.code === 1
             ? "Izin lokasi ditolak. Aktifkan di pengaturan browser."
             : "Gagal mengambil lokasi.",
-        ),
+        );
+        markLocated();
+      },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
     );
 
@@ -110,6 +142,7 @@ export default function MapView({
       setMapInstance(null);
       navigator.geolocation.clearWatch(watchId);
       map.remove();
+      clearTimeout(locateTimer);
     };
   }, [name, avatarUrl]);
 

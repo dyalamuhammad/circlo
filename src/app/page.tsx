@@ -13,7 +13,8 @@ import NotifBanner from "@/components/NotifBanner";
 import SplashScreen from "@/components/SplashScreen";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
-const MIN_SPLASH_MS = 9600;
+const MIN_SPLASH_MS = 2600;
+const MAX_SPLASH_MS = 15000;
 
 export default function Home() {
   const router = useRouter();
@@ -74,108 +75,137 @@ export default function Home() {
   };
 
   const [minDone, setMinDone] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
+  const [stage, setStage] = useState({ style: false, located: false });
+  const [hide, setHide] = useState(false);
+
   useEffect(() => {
-    const t = setTimeout(() => setMinDone(true), MIN_SPLASH_MS);
-    return () => clearTimeout(t);
+    const t1 = setTimeout(() => setMinDone(true), MIN_SPLASH_MS);
+    const t2 = setTimeout(() => setMapReady(true), MAX_SPLASH_MS);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
 
   const [myLoc, setMyLoc] = useState<{ lat: number; lng: number } | null>(null);
 
-  if (!user || !minDone) return <SplashScreen />;
+  const allReady = !!user && minDone && mapReady;
+  const progress = allReady
+    ? 100
+    : (user ? 25 : 0) +
+      (stage.style ? 20 : 0) +
+      (stage.located ? 20 : 0) +
+      (mapReady ? 20 : 0) +
+      (minDone ? 15 : 0);
+  const showSplash = !hide;
+
+  useEffect(() => {
+    if (!allReady) return;
+    const t = setTimeout(() => setHide(true), 700);
+    return () => clearTimeout(t);
+  }, [allReady]);
 
   return (
-    <main className="relative h-dvh w-full">
-      <MapView
-        focus={focus}
-        demo={!!user.is_anonymous}
-        sharing={sharing}
-        userId={user.id}
-        name={
-          user.is_anonymous
-            ? "Guest"
-            : (user.user_metadata?.full_name ?? user.email ?? "U")
-        }
-        avatarUrl={user.user_metadata?.avatar_url}
-        onPosition={setMyLoc}
-      />
+    <>
+      {showSplash && <SplashScreen progress={progress} />}
+      {user && (
+        <main className="relative h-dvh w-full">
+          <MapView
+            focus={focus}
+            demo={!!user.is_anonymous}
+            sharing={sharing}
+            userId={user.id}
+            name={
+              user.is_anonymous
+                ? "Guest"
+                : (user.user_metadata?.full_name ?? user.email ?? "U")
+            }
+            avatarUrl={user.user_metadata?.avatar_url}
+            onPosition={setMyLoc}
+            onReady={() => setMapReady(true)}
+            onProgress={(s) => setStage((p) => ({ ...p, [s]: true }))}
+          />
 
-      <div className="glass-bar absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex w-[calc(100%-1.5rem)] max-w-xs flex-col gap-3 rounded-[1.75rem] p-3.5 text-[#1a2e05]">
-        {/* Baris 1: nama + keluar */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/80 bg-[#1a2e05] text-base font-extrabold text-[#d9f99d] shadow-md">
-            {avatarUrl && !imgFailed ? (
-              <img
-                src={avatarUrl}
-                alt=""
-                referrerPolicy="no-referrer"
-                onError={() => setImgFailed(true)}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              initial
-            )}
+          <div className="glass-bar absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex w-[calc(100%-1.5rem)] max-w-xs flex-col gap-3 rounded-[1.75rem] p-3.5 text-[#1a2e05]">
+            {/* Baris 1: nama + keluar */}
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/80 bg-[#1a2e05] text-base font-extrabold text-[#d9f99d] shadow-md">
+                {avatarUrl && !imgFailed ? (
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    onError={() => setImgFailed(true)}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  initial
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-lg leading-tight font-extrabold tracking-tight">
+                  {user.is_anonymous
+                    ? "Tamu"
+                    : (user.user_metadata?.full_name ?? "Pengguna")}
+                </p>
+                <p className="text-xs font-semibold opacity-60">
+                  {sharing ? "Lokasi dibagikan" : "Lokasi tidak dibagikan"}
+                </p>
+              </div>
+
+              <button
+                onClick={logout}
+                aria-label="Keluar"
+                title="Keluar"
+                className="btn-glass flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+
+            {/* Baris 2: aksi */}
+            <div className="flex flex-wrap items-center gap-2 text-sm font-bold">
+              <button
+                onClick={() => setShowFriends(true)}
+                className="btn-solid flex items-center gap-1.5 rounded-full px-4 py-2"
+              >
+                <Users size={16} />
+                Teman
+              </button>
+
+              <button
+                onClick={toggleSharing}
+                aria-pressed={sharing}
+                title="Bagikan lokasi"
+                className={`btn-glass flex items-center gap-1.5 rounded-full px-4 py-2 ${
+                  sharing ? "ring-2 ring-[#1a2e05]" : "opacity-80"
+                }`}
+              >
+                {sharing ? <MapPin size={16} /> : <MapPinOff size={16} />}
+                {sharing ? "ON" : "OFF"}
+              </button>
+
+              {!user.is_anonymous && <NotifButton />}
+            </div>
           </div>
-
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-lg leading-tight font-extrabold tracking-tight">
-              {user.is_anonymous
-                ? "Tamu"
-                : (user.user_metadata?.full_name ?? "Pengguna")}
-            </p>
-            <p className="text-xs font-semibold opacity-60">
-              {sharing ? "Lokasi dibagikan" : "Lokasi tidak dibagikan"}
-            </p>
-          </div>
-
-          <button
-            onClick={logout}
-            aria-label="Keluar"
-            title="Keluar"
-            className="btn-glass flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
-
-        {/* Baris 2: aksi */}
-        <div className="flex flex-wrap items-center gap-2 text-sm font-bold">
-          <button
-            onClick={() => setShowFriends(true)}
-            className="btn-solid flex items-center gap-1.5 rounded-full px-4 py-2"
-          >
-            <Users size={16} />
-            Teman
-          </button>
-
-          <button
-            onClick={toggleSharing}
-            aria-pressed={sharing}
-            title="Bagikan lokasi"
-            className={`btn-glass flex items-center gap-1.5 rounded-full px-4 py-2 ${
-              sharing ? "ring-2 ring-[#1a2e05]" : "opacity-80"
-            }`}
-          >
-            {sharing ? <MapPin size={16} /> : <MapPinOff size={16} />}
-            {sharing ? "ON" : "OFF"}
-          </button>
-
-          {!user.is_anonymous && <NotifButton />}
-        </div>
-      </div>
-      {showFriends && (
-        <FriendsPanel
-          onLocate={(id) => {
-            setFocus({ id, n: Date.now() });
-            setShowFriends(false);
-          }}
-          userId={user.id}
-          isGuest={!!user.is_anonymous}
-          onClose={() => setShowFriends(false)}
-          myLoc={myLoc}
-        />
+          {showFriends && (
+            <FriendsPanel
+              onLocate={(id) => {
+                setFocus({ id, n: Date.now() });
+                setShowFriends(false);
+              }}
+              userId={user.id}
+              isGuest={!!user.is_anonymous}
+              onClose={() => setShowFriends(false)}
+              myLoc={myLoc}
+            />
+          )}
+          {!user.is_anonymous && <NotifBanner />}
+          <IosInstallBanner />
+        </main>
       )}
-      {!user.is_anonymous && <NotifBanner />}
-      <IosInstallBanner />
-    </main>
+    </>
   );
 }

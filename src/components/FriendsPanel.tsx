@@ -22,7 +22,7 @@ type Row = {
   addressee_id: string;
   status: "pending" | "accepted";
 };
-type Item = Row & { name: string };
+type Item = Row & { name: string; avatarUrl: string | null };
 type Note = { text: string; ok: boolean; icon?: LucideIcon };
 
 const warn = (text: string): Note => ({ text, ok: false });
@@ -104,16 +104,33 @@ export default function FriendsPanel({
       ? (
           await supabase
             .from("circle_profiles")
-            .select("id, display_name")
+            .select("id, display_name, avatar_url")
             .in("id", ids)
         ).data
       : [];
-    const names = new Map(
-      (profs ?? []).map((p) => [p.id, p.display_name as string]),
+
+    const profiles = new Map(
+      (profs ?? []).map((p) => [
+        p.id,
+        {
+          name: p.display_name as string,
+          avatarUrl: (p.avatar_url as string | null) ?? null,
+        },
+      ]),
     );
+
     setItems(
-      list.map((r) => ({ ...r, name: names.get(otherId(r)) ?? "User" })),
+      list.map((r) => {
+        const profile = profiles.get(otherId(r));
+
+        return {
+          ...r,
+          name: profile?.name ?? "User",
+          avatarUrl: profile?.avatarUrl ?? null,
+        };
+      }),
     );
+
     const { data: locs } = await supabase
       .from("circle_locations")
       .select("user_id, lat, lng, sharing, updated_at");
@@ -336,16 +353,17 @@ export default function FriendsPanel({
               {friends.map((i) => {
                 const fid =
                   i.requester_id === userId ? i.addressee_id : i.requester_id;
+
                 const isLive = live.has(fid);
+
                 const dist =
                   isLive && myLoc
                     ? formatDistance(distanceM(myLoc, info[fid]))
                     : null;
-                const sub = isLive
-                  ? [places[fid], agoLabel(info[fid].at)]
-                      .filter(Boolean)
-                      .join(" · ")
-                  : "Lokasi tidak tersedia";
+
+                const place = isLive ? places[fid] : null;
+                const lastSeen = isLive ? agoLabel(info[fid].at) : null;
+
                 return (
                   <div
                     key={i.id}
@@ -355,26 +373,56 @@ export default function FriendsPanel({
                     onKeyDown={(e) =>
                       isLive && e.key === "Enter" && onLocate(fid)
                     }
-                    className={`glass-row flex items-center justify-between gap-2 rounded-2xl p-2.5 pl-4 ${
+                    className={`glass-row flex min-h-[88px] items-center gap-3 rounded-2xl p-3 ${
                       isLive
                         ? "cursor-pointer transition active:scale-[0.98]"
                         : ""
                     }`}
                   >
-                    <span className="min-w-0">
-                      <span className="flex items-baseline gap-1.5">
-                        <span className="truncate font-semibold">{i.name}</span>
+                    {/* Avatar teman */}
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-[#d9f99d]">
+                      {i.avatarUrl ? (
+                        <img
+                          src={i.avatarUrl}
+                          alt={i.name}
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-base font-extrabold text-[#365314]">
+                          {i.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Informasi teman */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-[15px] font-extrabold">
+                          {i.name}
+                        </span>
+
                         {dist && (
-                          <span className="shrink-0 text-xs font-semibold opacity-50">
+                          <span className="shrink-0 text-xs font-bold text-[#52732c]">
                             {dist}
                           </span>
                         )}
-                      </span>
-                      <span className="block truncate text-[11px] font-medium opacity-60">
-                        {sub}
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-1.5">
+                      </div>
+
+                      <div className="mt-1 truncate text-xs font-semibold opacity-65">
+                        {place ? `${place}` : "Lokasi tidak tersedia"}
+                      </div>
+
+                      <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium opacity-55">
+                        {lastSeen ? `Aktif · ${lastSeen}` : "Tidak aktif"}
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -383,10 +431,11 @@ export default function FriendsPanel({
                         disabled={pinging === fid}
                         aria-label="Ping"
                         title="Ping"
-                        className="btn-glass flex h-8 w-8 items-center justify-center rounded-xl disabled:opacity-50"
+                        className="btn-glass flex h-10 w-10 items-center justify-center rounded-xl disabled:opacity-50"
                       >
-                        <BellRing size={14} />
+                        <BellRing size={17} />
                       </button>
+
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -394,11 +443,11 @@ export default function FriendsPanel({
                         }}
                         aria-label="Hapus teman"
                         title="Hapus"
-                        className="btn-glass flex h-8 w-8 items-center justify-center rounded-xl"
+                        className="btn-glass flex h-10 w-10 items-center justify-center rounded-xl"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={17} />
                       </button>
-                    </span>
+                    </div>
                   </div>
                 );
               })}
