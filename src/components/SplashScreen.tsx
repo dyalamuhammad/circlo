@@ -3,7 +3,8 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import "./splash.css";
 
-const v = (o: Record<string, string | number>) => o as CSSProperties;
+const v = (o: Record<string, string | number | undefined>) =>
+  o as CSSProperties;
 
 const ORBIT_1 = [
   { c: "D", a: 0, d: 1.7, bg: "#fff", fg: "#1a2e05" },
