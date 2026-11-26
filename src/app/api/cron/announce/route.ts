@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import webpush from "web-push";
+import * as webpush from "web-push";
 import { Receiver } from "@upstash/qstash";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
