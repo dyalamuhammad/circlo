@@ -10,8 +10,10 @@ import IosInstallBanner from "@/components/IosInstallBanner";
 import { Users, MapPin, MapPinOff, LogOut } from "lucide-react";
 import NotifButton from "@/components/NotifButton";
 import NotifBanner from "@/components/NotifBanner";
+import SplashScreen from "@/components/SplashScreen";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
+const MIN_SPLASH_MS = 9600;
 
 export default function Home() {
   const router = useRouter();
@@ -41,6 +43,18 @@ export default function Home() {
         .maybeSingle();
       if (loc) setSharing(loc.sharing);
       setUser(data.user);
+      try {
+        localStorage.setItem(
+          "circlo-name",
+          data.user.is_anonymous
+            ? "Tamu"
+            : String(
+                data.user.user_metadata?.full_name ??
+                  data.user.email ??
+                  "Teman",
+              ).split(/[ @]/)[0],
+        );
+      } catch {}
     };
     init();
   }, []);
@@ -59,7 +73,13 @@ export default function Home() {
       .eq("user_id", user!.id);
   };
 
-  if (!user) return <main className="p-8">Memuat...</main>;
+  const [minDone, setMinDone] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinDone(true), MIN_SPLASH_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!user || !minDone) return <SplashScreen />;
 
   return (
     <main className="relative h-dvh w-full">
