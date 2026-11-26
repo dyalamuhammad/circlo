@@ -11,6 +11,8 @@ import { Users, MapPin, MapPinOff, LogOut } from "lucide-react";
 import NotifButton from "@/components/NotifButton";
 import NotifBanner from "@/components/NotifBanner";
 import SplashScreen from "@/components/SplashScreen";
+import BottomNav, { type Tab } from "@/components/BottomNav";
+import MePanel from "@/components/MePanel";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 const MIN_SPLASH_MS = 2600;
@@ -20,7 +22,7 @@ export default function Home() {
   const router = useRouter();
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
-  const [showFriends, setShowFriends] = useState(false);
+  const [tab, setTab] = useState<Tab | null>(null);
   const [sharing, setSharing] = useState(true);
   const [focus, setFocus] = useState<{ id: string; n: number } | null>(null);
 
@@ -168,14 +170,6 @@ export default function Home() {
             {/* Baris 2: aksi */}
             <div className="flex flex-wrap items-center gap-2 text-sm font-bold">
               <button
-                onClick={() => setShowFriends(true)}
-                className="btn-solid flex items-center gap-1.5 rounded-full px-4 py-2"
-              >
-                <Users size={16} />
-                Teman
-              </button>
-
-              <button
                 onClick={toggleSharing}
                 aria-pressed={sharing}
                 title="Bagikan lokasi"
@@ -190,18 +184,31 @@ export default function Home() {
               {!user.is_anonymous && <NotifButton />}
             </div>
           </div>
-          {showFriends && (
+          {tab === "friends" && (
             <FriendsPanel
-              onLocate={(id) => {
-                setFocus({ id, n: Date.now() });
-                setShowFriends(false);
-              }}
               userId={user.id}
               isGuest={!!user.is_anonymous}
-              onClose={() => setShowFriends(false)}
               myLoc={myLoc}
+              onClose={() => setTab(null)}
+              onLocate={(id) => {
+                setFocus({ id, n: Date.now() });
+                setTab(null);
+              }}
             />
           )}
+          {tab === "me" && (
+            <MePanel
+              userId={user.id}
+              isGuest={!!user.is_anonymous}
+              onClose={() => setTab(null)}
+            />
+          )}
+          <BottomNav
+            userId={user.id}
+            isGuest={!!user.is_anonymous}
+            active={tab}
+            onChange={(t) => setTab((cur) => (cur === t ? null : t))}
+          />
           {!user.is_anonymous && <NotifBanner />}
           <IosInstallBanner />
         </main>

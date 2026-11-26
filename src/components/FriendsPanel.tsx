@@ -6,11 +6,9 @@ import {
   BellRing,
   Check,
   CircleCheck,
-  Copy,
   Info,
   MapPin,
   Trash2,
-  UserPlus,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -23,19 +21,9 @@ type Row = {
   status: "pending" | "accepted";
 };
 type Item = Row & { name: string; avatarUrl: string | null };
-type Note = { text: string; ok: boolean; icon?: LucideIcon };
+export type Note = { text: string; ok: boolean; icon?: LucideIcon };
 
-const warn = (text: string): Note => ({ text, ok: false });
-
-const MESSAGES: Record<string, Note> = {
-  requested: { text: "Permintaan terkirim", ok: true },
-  accepted: { text: "Kalian sekarang berteman", ok: true },
-  pending: warn("Permintaan sudah terkirim, menunggu diterima."),
-  not_found: warn("Kode tidak ditemukan."),
-  self: warn("Itu kode kamu sendiri."),
-  target_is_guest: warn("User guest tidak bisa berteman."),
-  guest_not_allowed: warn("Guest tidak bisa menambah teman."),
-};
+export const warn = (text: string): Note => ({ text, ok: false });
 
 const PING_MESSAGES: Record<string, Note> = {
   ok: { text: "Ping terkirim", ok: true, icon: MapPin },
@@ -45,7 +33,7 @@ const PING_MESSAGES: Record<string, Note> = {
   delivery_failed: warn("Gagal mengirim, coba lagi nanti."),
 };
 
-function Notice({ note }: { note: Note }) {
+export function Notice({ note }: { note: Note }) {
   const Icon = note.icon ?? (note.ok ? CircleCheck : Info);
   return (
     <p className="mt-2 flex items-start gap-1.5 text-xs font-semibold text-[#1a2e05]">
@@ -71,10 +59,7 @@ export default function FriendsPanel({
   myLoc,
 }: Props) {
   const supabase = useMemo(() => createClient(), []);
-  const [code, setCode] = useState("");
-  const [input, setInput] = useState("");
   const [items, setItems] = useState<Item[]>([]);
-  const [msg, setMsg] = useState<Note | null>(null);
   const [live, setLive] = useState<Set<string>>(new Set());
   const [info, setInfo] = useState<
     Record<string, { lat: number; lng: number; at: string }>
@@ -82,16 +67,8 @@ export default function FriendsPanel({
   const [places, setPlaces] = useState<Record<string, string>>({});
   const [pingMsg, setPingMsg] = useState<Note | null>(null);
   const [pinging, setPinging] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
-    const { data: me } = await supabase
-      .from("circle_profiles")
-      .select("invite_code")
-      .eq("id", userId)
-      .maybeSingle();
-    setCode(me?.invite_code ?? "");
-
     const { data: rows } = await supabase
       .from("circle_friendships")
       .select("id, requester_id, addressee_id, status");
@@ -160,19 +137,6 @@ export default function FriendsPanel({
       );
     });
   }, [info, userId]);
-  const addFriend = async () => {
-    if (!input.trim()) return;
-    const { data, error } = await supabase.rpc("circle_add_friend_by_code", {
-      p_code: input,
-    });
-    setMsg(
-      error
-        ? warn(error.message)
-        : (MESSAGES[data as string] ?? warn(String(data))),
-    );
-    setInput("");
-    load();
-  };
 
   const accept = async (id: string) => {
     await supabase
@@ -185,12 +149,6 @@ export default function FriendsPanel({
   const remove = async (id: string) => {
     await supabase.from("circle_friendships").delete().eq("id", id);
     load();
-  };
-
-  const copyCode = async () => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
   };
 
   const ping = async (fid: string) => {
@@ -225,7 +183,7 @@ export default function FriendsPanel({
   const friends = items.filter((i) => i.status === "accepted");
 
   return (
-    <div className="glass-panel absolute inset-x-0 bottom-0 z-20 max-h-[70dvh] overflow-y-auto rounded-t-[2rem] p-5 text-[#1a2e05] sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-96 sm:rounded-[2rem]">
+    <div className="glass-panel absolute inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] z-20 mx-auto max-h-[65dvh] max-w-md overflow-y-auto rounded-[2rem] p-5 text-[#1a2e05]">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-extrabold tracking-tight">Teman</h2>
         <button
@@ -244,44 +202,6 @@ export default function FriendsPanel({
         </p>
       ) : (
         <div className="space-y-5 text-sm">
-          {/* Kode invite */}
-          <div>
-            <p className="mb-1.5 font-semibold opacity-60">Kode invite kamu</p>
-            <div className="glass-row flex items-center justify-between rounded-2xl py-2 pr-2 pl-4">
-              <span className="font-mono text-xl font-bold tracking-widest">
-                {code}
-              </span>
-              <button
-                onClick={copyCode}
-                className="btn-glass flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold"
-              >
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? "Tersalin" : "Salin"}
-              </button>
-            </div>
-          </div>
-
-          {/* Tambah teman */}
-          <div>
-            <div className="flex gap-2">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addFriend()}
-                placeholder="Kode teman"
-                className="glass-field w-full min-w-0 rounded-2xl px-4 py-3 font-semibold uppercase"
-              />
-              <button
-                onClick={addFriend}
-                className="btn-solid flex shrink-0 items-center gap-1.5 rounded-2xl px-4 py-3 font-bold"
-              >
-                <UserPlus size={16} />
-                Tambah
-              </button>
-            </div>
-            {msg && <Notice note={msg} />}
-          </div>
-
           {/* Permintaan masuk */}
           {incoming.length > 0 && (
             <div>

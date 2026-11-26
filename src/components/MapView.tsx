@@ -163,13 +163,13 @@ export default function MapView({
           }
           aria-label="Ke posisiku"
           title="Ke posisiku"
-          className="glass-bar absolute bottom-6 right-3 z-10 flex h-12 w-12 items-center justify-center rounded-full text-[#1a2e05] transition active:scale-95"
+          className="glass-bar absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex h-12 w-12 items-center justify-center rounded-full text-[#1a2e05] transition active:scale-95"
         >
           <LocateFixed size={22} />
         </button>
       )}
       {error && (
-        <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white">
+        <div className="absolute bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] left-1/2 z-10 -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white">
           {error}
         </div>
       )}

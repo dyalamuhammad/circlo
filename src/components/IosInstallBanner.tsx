@@ -21,7 +21,7 @@ export default function IosInstallBanner() {
   if (!show) return null;
 
   return (
-    <div className="absolute inset-x-3 bottom-3 z-30 rounded-2xl bg-white p-4 text-sm shadow-2xl">
+    <div className="absolute inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] z-30 rounded-2xl bg-white p-4 text-sm shadow-2xl">
       <p className="font-bold">Pasang Circlo di iPhone kamu</p>
       <p className="mt-1 text-gray-600">
         Agar berjalan sebagai aplikasi (layar penuh dan lebih stabil), tambahkan
