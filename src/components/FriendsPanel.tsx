@@ -14,6 +14,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { distanceM, formatDistance } from "@/lib/distance";
 
 type Row = {
   id: string;
@@ -59,6 +60,7 @@ type Props = {
   isGuest: boolean;
   onClose: () => void;
   onLocate: (id: string) => void;
+  myLoc: { lat: number; lng: number } | null;
 };
 
 export default function FriendsPanel({
@@ -66,6 +68,7 @@ export default function FriendsPanel({
   isGuest,
   onClose,
   onLocate,
+  myLoc,
 }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [code, setCode] = useState("");
@@ -334,6 +337,10 @@ export default function FriendsPanel({
                 const fid =
                   i.requester_id === userId ? i.addressee_id : i.requester_id;
                 const isLive = live.has(fid);
+                const dist =
+                  isLive && myLoc
+                    ? formatDistance(distanceM(myLoc, info[fid]))
+                    : null;
                 const sub = isLive
                   ? [places[fid], agoLabel(info[fid].at)]
                       .filter(Boolean)
@@ -355,8 +362,13 @@ export default function FriendsPanel({
                     }`}
                   >
                     <span className="min-w-0">
-                      <span className="block truncate font-semibold">
-                        {i.name}
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="truncate font-semibold">{i.name}</span>
+                        {dist && (
+                          <span className="shrink-0 text-xs font-semibold opacity-50">
+                            {dist}
+                          </span>
+                        )}
                       </span>
                       <span className="block truncate text-[11px] font-medium opacity-60">
                         {sub}

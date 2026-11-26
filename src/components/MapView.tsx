@@ -15,6 +15,7 @@ type Props = {
   sharing: boolean;
   demo?: boolean;
   focus?: { id: string; n: number } | null;
+  onPosition?: (p: { lat: number; lng: number }) => void;
 };
 
 export default function MapView({
@@ -24,6 +25,7 @@ export default function MapView({
   sharing,
   demo,
   focus,
+  onPosition,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +37,10 @@ export default function MapView({
   useEffect(() => {
     sharingRef.current = sharing;
   }, [sharing]);
+  const onPositionRef = useRef(onPosition);
+  useEffect(() => {
+    onPositionRef.current = onPosition;
+  }, [onPosition]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -80,6 +86,10 @@ export default function MapView({
           firstFix = false;
         }
         setError(null);
+        onPositionRef.current?.({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
         if (sharingRef.current)
           pushLocation(
             pos.coords.latitude,

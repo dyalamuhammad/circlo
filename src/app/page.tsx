@@ -79,6 +79,8 @@ export default function Home() {
     return () => clearTimeout(t);
   }, []);
 
+  const [myLoc, setMyLoc] = useState<{ lat: number; lng: number } | null>(null);
+
   if (!user || !minDone) return <SplashScreen />;
 
   return (
@@ -94,6 +96,7 @@ export default function Home() {
             : (user.user_metadata?.full_name ?? user.email ?? "U")
         }
         avatarUrl={user.user_metadata?.avatar_url}
+        onPosition={setMyLoc}
       />
 
       <div className="glass-bar absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex w-[calc(100%-1.5rem)] max-w-xs flex-col gap-3 rounded-[1.75rem] p-3.5 text-[#1a2e05]">
@@ -168,6 +171,7 @@ export default function Home() {
           userId={user.id}
           isGuest={!!user.is_anonymous}
           onClose={() => setShowFriends(false)}
+          myLoc={myLoc}
         />
       )}
       {!user.is_anonymous && <NotifBanner />}
