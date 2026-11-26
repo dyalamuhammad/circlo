@@ -19,7 +19,19 @@ export default function NotifButton() {
     return () => window.removeEventListener("circlo-push-change", refresh);
   }, []);
 
-  if (!state || state === "unsupported" || state === "ios-install") return null;
+  if (!state) return null;
+  if (state === "unsupported")
+    return (
+      <span className="text-xs font-semibold opacity-60">
+        Tidak didukung browser ini
+      </span>
+    );
+  if (state === "ios-install")
+    return (
+      <span className="text-xs font-semibold opacity-60">
+        Pasang ke Home Screen dulu
+      </span>
+    );
 
   const toggle = async () => {
     setBusy(true);
