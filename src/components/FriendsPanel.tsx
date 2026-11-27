@@ -183,7 +183,7 @@ export default function FriendsPanel({
   const friends = items.filter((i) => i.status === "accepted");
 
   return (
-    <div className="glass-panel absolute inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] z-20 mx-auto max-h-[65dvh] max-w-md overflow-y-auto rounded-[2rem] p-5 text-[#1a2e05]">
+    <div className="glass-panel absolute inset-x-3 bottom-[calc(6.25rem+env(safe-area-inset-bottom,0px))] z-20 mx-auto max-h-[65dvh] max-w-md overflow-y-auto rounded-[2rem] p-5 text-[#1a2e05]">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-extrabold tracking-tight">Teman</h2>
         <button

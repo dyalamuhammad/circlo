@@ -29,7 +29,7 @@ export default function NotifBanner() {
   };
 
   return (
-    <div className="glass-bar absolute bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] left-3 right-3 z-10 rounded-2xl p-4 text-sm text-[#1a2e05] sm:right-auto sm:max-w-sm">
+    <div className="glass-bar absolute bottom-[calc(6.25rem+env(safe-area-inset-bottom,0px))] left-3 right-3 z-10 rounded-2xl p-4 text-sm text-[#1a2e05] sm:right-auto sm:max-w-sm">
       <button
         onClick={() => setHidden(true)}
         aria-label="Tutup"

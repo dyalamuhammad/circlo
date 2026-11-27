@@ -184,7 +184,7 @@ export default function MapView({
         </button>
       )}
       {error && (
-        <div className="absolute bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] left-1/2 z-10 -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white">
+        <div className="absolute bottom-[calc(6.25rem+env(safe-area-inset-bottom,0px))] left-1/2 z-10 -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white">
           {error}
         </div>
       )}

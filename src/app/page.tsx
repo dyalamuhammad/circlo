@@ -46,6 +46,7 @@ export default function Home() {
         .maybeSingle();
       if (loc) setSharing(loc.sharing);
       setUser(data.user);
+      if (!data.user.is_anonymous) setTab("friends");
       try {
         localStorage.setItem(
           "circlo-name",

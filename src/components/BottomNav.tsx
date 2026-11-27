@@ -56,21 +56,21 @@ export default function BottomNav({
   ];
 
   return (
-    <nav className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <nav className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))]">
       <div className="glass-bar pointer-events-auto flex gap-1 rounded-full p-1.5">
         {tabs.map(({ id, label, Icon, badge }) => (
           <button
             key={id}
             onClick={() => onChange(id)}
             aria-current={active === id}
-            className={`relative flex h-11 min-w-[104px] items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition active:scale-95 ${
+            className={`relative flex h-14 min-w-[92px] flex-col items-center justify-center gap-0.5 rounded-full px-5 text-[11px] font-bold transition active:scale-95 ${
               active === id ? "bg-[#1a2e05] text-[#d9f99d]" : "text-[#1a2e05]"
             }`}
           >
-            <Icon size={18} />
+            <Icon size={20} />
             {label}
             {badge > 0 && (
-              <span className="absolute right-2 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+              <span className="absolute right-4 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                 {badge > 9 ? "9+" : badge}
               </span>
             )}
