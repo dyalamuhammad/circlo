@@ -337,7 +337,7 @@ export default function FriendsPanel({
                       </div>
 
                       <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium opacity-55">
-                        {lastSeen ? `Aktif · ${lastSeen}` : "Tidak aktif"}
+                        {lastSeen}
                       </div>
                     </div>
 
