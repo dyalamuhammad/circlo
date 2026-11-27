@@ -7,9 +7,13 @@ Berbagi lokasi realtime dengan teman, terinspirasi dari Find My dan Zenly. Web a
 
 ## Screenshots
 
-|                Login                 |              Panel Teman               |
-| :----------------------------------: | :------------------------------------: |
-| ![Login](docs/screenshots/login.png) | ![Teman](docs/screenshots/friends.png) |
+|              Splash Screen              |                Login                 |
+| :-------------------------------------: | :----------------------------------: |
+| ![Login](docs/screenshots/splash-2.png) | ![Teman](docs/screenshots/login.png) |
+
+|             Privacy Policy             |              Panel Teman               |
+| :------------------------------------: | :------------------------------------: |
+| ![Login](docs/screenshots/privacy.png) | ![Teman](docs/screenshots/friends.png) |
 
 |          Mode Demo (Tamu)          |              Banner iPhone              |
 | :--------------------------------: | :-------------------------------------: |
@@ -70,7 +74,7 @@ Alur notifikasi:
 - **Web Push langsung dengan VAPID**, tanpa Firebase, agar tidak menambah ketergantungan layanan.
 - **Satu jadwal QStash untuk semua user.** Endpoint yang memilih target dan mengirim, jadi pemakaian pesan QStash sangat kecil dan aman di free tier.
 - **Pengingat yang tidak mengganggu:** dilewati untuk user yang lokasinya masih baru atau sharing-nya mati, dan tidak dikirim di malam hari.
-- **Anti-spam ping:** hanya teman _accepted_, tamu ditolak, maksimal satu ping per pasangan setiap 15 menit, divalidasi di fungsi SQL.
+- **Anti-spam ping:** hanya teman _accepted_, tamu ditolak, maksimal satu ping per pasangan setiap 1 menit, divalidasi di fungsi SQL.
 
 ### Skema database
 
@@ -120,7 +124,7 @@ Skrip SQL ada di `supabase/sql/` dan dijalankan berurutan.
 **Prasyarat:** Node.js, akun Supabase, dan API key MapTiler.
 
 ```bash
-git clone https://github.com/USERNAME_KAMU/circlo.git
+git clone https://github.com/dyalamuhammad/circlo.git
 cd circlo
 npm install
 ```
