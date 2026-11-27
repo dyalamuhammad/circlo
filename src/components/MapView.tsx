@@ -7,6 +7,7 @@ import { createLocationPusher } from "@/lib/locationPusher";
 import OtherMarkers from "@/components/OtherMarkers";
 import DemoBots from "@/components/DemoBots";
 import { LocateFixed } from "lucide-react";
+import { mapStyleUrl } from "@/lib/mapTheme";
 
 type Props = {
   userId: string;
@@ -18,6 +19,7 @@ type Props = {
   onPosition?: (p: { lat: number; lng: number }) => void;
   onReady?: () => void;
   onProgress?: (s: "style" | "located") => void;
+  dark?: boolean;
 };
 
 export default function MapView({
@@ -30,12 +32,18 @@ export default function MapView({
   onPosition,
   onReady,
   onProgress,
+  dark,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
   const [myPos, setMyPos] = useState<[number, number] | null>(null);
   const lastPos = useRef<[number, number] | null>(null);
+  const darkRef = useRef(!!dark);
+  const appliedDark = useRef(!!dark);
+  useEffect(() => {
+    darkRef.current = !!dark;
+  }, [dark]);
 
   const sharingRef = useRef(sharing);
   useEffect(() => {
@@ -59,9 +67,10 @@ export default function MapView({
     const supabase = createClient();
     const pushLocation = createLocationPusher(supabase, userId);
     maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
+    appliedDark.current = darkRef.current;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`,
+      style: mapStyleUrl(darkRef.current),
       center: [106.8456, -6.2088], // fallback: Jakarta
       zoom: 3,
     });
@@ -145,6 +154,12 @@ export default function MapView({
       clearTimeout(locateTimer);
     };
   }, [name, avatarUrl]);
+
+  useEffect(() => {
+    if (!mapInstance || appliedDark.current === !!dark) return;
+    appliedDark.current = !!dark;
+    mapInstance.setStyle(mapStyleUrl(!!dark));
+  }, [dark, mapInstance]);
 
   return (
     <>

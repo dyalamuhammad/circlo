@@ -1,10 +1,21 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, LogOut, MapPin, UserPlus, X } from "lucide-react";
+import {
+  Check,
+  Copy,
+  LogOut,
+  MapPin,
+  Moon,
+  Sun,
+  SunMoon,
+  UserPlus,
+  X,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { reverseGeocode } from "@/lib/placeLabel";
 import NotifButton from "@/components/NotifButton";
 import { Notice, warn, type Note } from "@/components/FriendsPanel";
+import type { MapTheme } from "@/lib/mapTheme";
 
 const MESSAGES: Record<string, Note> = {
   requested: { text: "Permintaan terkirim", ok: true },
@@ -27,6 +38,8 @@ type Props = {
   myLoc: { lat: number; lng: number } | null;
   onLogout: () => void;
   onClose: () => void;
+  mapTheme: MapTheme;
+  onMapTheme: (t: MapTheme) => void;
 };
 
 export default function MePanel({
@@ -40,6 +53,8 @@ export default function MePanel({
   myLoc,
   onLogout,
   onClose,
+  mapTheme,
+  onMapTheme,
 }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [code, setCode] = useState("");
@@ -131,6 +146,38 @@ export default function MePanel({
               <MapPin size={12} className="shrink-0" />
               <span className="truncate">{placeText}</span>
             </p>
+          </div>
+        </div>
+
+        <div className="glass-row rounded-2xl p-3">
+          <p className="mb-2 font-bold">Tampilan peta</p>
+          <div
+            className="flex gap-1 rounded-xl bg-[#1a2e05]/10 p-1"
+            role="radiogroup"
+            aria-label="Tampilan peta"
+          >
+            {(
+              [
+                ["light", "Terang", Sun],
+                ["dark", "Gelap", Moon],
+                ["auto", "Otomatis", SunMoon],
+              ] as const
+            ).map(([id, label, Icon]) => (
+              <button
+                key={id}
+                role="radio"
+                aria-checked={mapTheme === id}
+                onClick={() => onMapTheme(id)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition ${
+                  mapTheme === id
+                    ? "bg-[#1a2e05] text-[#d9f99d]"
+                    : "text-[#1a2e05]"
+                }`}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 

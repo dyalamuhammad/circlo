@@ -12,6 +12,7 @@ import NotifBanner from "@/components/NotifBanner";
 import SplashScreen from "@/components/SplashScreen";
 import BottomNav, { type Tab } from "@/components/BottomNav";
 import MePanel from "@/components/MePanel";
+import type { MapTheme } from "@/lib/mapTheme";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 const MIN_SPLASH_MS = 2600;
@@ -91,6 +92,29 @@ export default function Home() {
 
   const [myLoc, setMyLoc] = useState<{ lat: number; lng: number } | null>(null);
 
+  const [mapTheme, setMapTheme] = useState<MapTheme>("auto");
+  const [sysDark, setSysDark] = useState(false);
+
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem("circlo-map-theme");
+      if (s === "light" || s === "dark" || s === "auto") setMapTheme(s);
+    } catch {}
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    setSysDark(mq.matches);
+    const on = (e: MediaQueryListEvent) => setSysDark(e.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+
+  const changeMapTheme = (t: MapTheme) => {
+    setMapTheme(t);
+    try {
+      localStorage.setItem("circlo-map-theme", t);
+    } catch {}
+  };
+  const mapDark = mapTheme === "dark" || (mapTheme === "auto" && sysDark);
+
   const allReady = !!user && minDone && mapReady;
   const progress = allReady
     ? 100
@@ -113,6 +137,7 @@ export default function Home() {
       {user && (
         <main className="relative h-dvh w-full">
           <MapView
+            dark={mapDark}
             focus={focus}
             demo={!!user.is_anonymous}
             sharing={sharing}
@@ -142,6 +167,8 @@ export default function Home() {
           )}
           {tab === "me" && (
             <MePanel
+              mapTheme={mapTheme}
+              onMapTheme={changeMapTheme}
               userId={user.id}
               isGuest={!!user.is_anonymous}
               name={
